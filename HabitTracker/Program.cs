@@ -7,6 +7,7 @@ namespace HabitTracker
     internal class Program
     {
         private static string connectionString = @"Data Source=HabitTracker.db";
+        private static DataAccess db = new DataAccess(connectionString);
 
 
         static void Main(string[] args)
@@ -56,13 +57,12 @@ namespace HabitTracker
         }
         private static void MenuSelection()
         {
-            Console.Clear();
             bool closeApp = false;
-
-            PrintMainMenu();
 
             while (closeApp == false)
             {
+                Console.Clear();
+                PrintMainMenu();
                 string commandInput = GetUserInput("Enter menu selection: ");
 
                 switch (commandInput)
@@ -72,16 +72,17 @@ namespace HabitTracker
                         closeApp = true;
                         break;
                     case "1":
-                        GetAllRecords();
+                        //GetAllRecords();
+                        PressAnyKeyToContinue();
                         break;
                     case "2":
                         InsertRecord();
                         break;
                     case "3":
-                        DeleteRecord();
+                        //DeleteRecord();
                         break;
                     case "4":
-                        UpdateRecord();
+                        //UpdateRecord();
                         break;
                     default:
                         Console.WriteLine("\nINVALID COMMAND! Please enter a number between 0 and 4.");
@@ -95,7 +96,11 @@ namespace HabitTracker
             if (input == "0") MenuSelection();
         }
 
-
+        private static void PressAnyKeyToContinue()
+        {
+            Console.Write("Press any key to continue...");
+            Console.ReadKey();
+        }
         private static string GetUserInput(string message)
         {
             Console.Write(message);
@@ -121,149 +126,42 @@ namespace HabitTracker
         {
             string dateInput = string.Empty;
             DateOnly output;
+            bool invalidDate = true;
             bool firstTime = true;
 
             do
             {
                 message = (firstTime) ? message : "ERROR: Please enter a valid date (yyyy-mm-dd): ";
                 dateInput = GetUserInput(message);
+                ReturnToMainMenu(dateInput);
                 firstTime = false;
 
-            } while (!DateOnly.TryParseExact(dateInput, "yyyy-MM-dd", out output));
+                if(dateInput == "")
+                {
+                    invalidDate = false;
+                    output = DateOnly.Parse(DateTime.Now.Date.ToString("yyyy-MM-dd"));
+                }
+                else
+                {
+                    invalidDate = !DateOnly.TryParseExact(dateInput, "yyyy-MM-dd", out output);
+                }
+
+            } while (invalidDate);
 
             return output;
         }
 
-
-
-        private static void UpdateRecord()
-        {
-            Console.Clear();
-            GetAllRecords();
-
-            var recordId = GetNumberInput("Enter Id of the record you would like to update or type 0 to return to the main menu: ");
-            ReturnToMainMenu(recordId.ToString());
-
-            using (var connection = new SqliteConnection(connectionString))
-            {
-                connection.Open();
-
-                var checkCmd = connection.CreateCommand();
-                checkCmd.CommandText = $"select exists (Select 1 from drinkingWater where Id = {recordId}";
-                int checkQuery = Convert.ToInt32(checkCmd.ExecuteScalar());
-
-                if (checkQuery == 0)
-                {
-                    Console.WriteLine($"\n\nRecord with Id {recordId} doesn't exist.\n\n");
-                    connection.Close();
-                    UpdateRecord();
-                }
-
-
-                DateOnly date = GetDateInput("Please insert the date (Format yyyy-mm-dd): ");
-                int quantitiy = GetNumberInput("Please insert number of units (no decimals allowed): ");
-
-                var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"update drinkingWater set Date = '{date.ToString("yyyy-MM-dd")}', quantity = '{quantitiy}' where Id = {recordId}";
-
-                tableCmd.ExecuteNonQuery();
-                connection.Close();
-            }
-        }
-
-        private static void DeleteRecord()
-        {
-            Console.Clear();
-            GetAllRecords();
-
-            var recordId = GetNumberInput("Enter the Id of the record you want to delete or type 0 to return to the Main Menu: ");
-            ReturnToMainMenu(recordId.ToString());
-
-            using (var connection = new SqliteConnection(connectionString))
-            {
-                connection.Open();
-                var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"delete from drinkingWater where id = '{recordId}'";
-
-                int rowCount = tableCmd.ExecuteNonQuery();
-
-                if (rowCount == 0)
-                {
-                    Console.WriteLine($"\n\nRecord with Id {recordId} doesn't exist. \n\n");
-                    DeleteRecord();
-                }
-                Console.WriteLine($"\n\nRecord with Id {recordId} was deleted. \n\n");
-            }
-        }
-
         private static void InsertRecord()
         {
-            string date = GetUserInput("Please insert the date (Format yyyy-mm-dd). Type 0 to return to main menu.");
-            ReturnToMainMenu(date);
-
+            DateOnly date = GetDateInput("Please enter the date (Format yyyy-mm-dd).\nType 0 to return to main menu.\nLeave blank for today's date.\nEnter selection: ");
 
             int quantity = GetNumberInput("Please enter number of units (no decimals allowed): ");
 
-            using (var connection = new SqliteConnection(connectionString))
-            {
-                connection.Open();
-                var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"insert into drinkingWater(date, quantity) values('{date}', '{quantity}')";
-
-                tableCmd.ExecuteNonQuery();
-                connection.Close();
-            }
+            db.Insert(date, quantity);
         }
-
-
-        private static void GetAllRecords()
-        {
-            Console.Clear();
-
-            using (var connection = new SqliteConnection(connectionString))
-            {
-                connection.Open();
-                var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = "select * from drinkingWater";
-
-                List<DrinkingWater> tableData = new();
-
-                SqliteDataReader reader = tableCmd.ExecuteReader();
-
-                if (reader.HasRows)
-                {
-                    while (reader.Read())
-                    {
-                        tableData.Add(
-                            new DrinkingWater
-                            {
-                                Id = reader.GetInt32(0),
-                                Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yy", new CultureInfo("en-US")),
-                                Quantity = reader.GetInt32(2),
-                            }
-                         );
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No rows found");
-                }
-
-                connection.Close();
-
-                Console.WriteLine("--------------------------------------------------------\n");
-                foreach (var dw in tableData)
-                {
-                    Console.WriteLine($"{dw.Id} - {dw.Date.ToString("dd-MM-yyyy")} - Quantity: {dw.Quantity}");
-                }
-                Console.WriteLine("--------------------------------------------------------\n");
-
-            }
-        }
-
     }
 
-    public class DrinkingWater
+    public class HabitModel
     {
         public int Id { get; set; }
         public DateTime Date { get; set; }
