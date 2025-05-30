@@ -19,10 +19,10 @@ namespace HabitTracker
         static void Main(string[] args)
         {
             db.InitializeTables();
-            ConsoleUI.MenuSelection();
-
-
-            ConsoleUI.PrintHabitsList(db);
+            ConsoleUI.MainMenu(db);
+            
+            //ConsoleUI.MenuSelection();
+            //ConsoleUI.PrintHabitsList(db);
 
             //db.InsertRecord("drinkingWater", "2025-03-07", 25);
             //db.UpdateRecord("drinkingWater", 8, "2024-03-07", 25);

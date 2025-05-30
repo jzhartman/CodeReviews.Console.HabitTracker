@@ -137,8 +137,8 @@ namespace HabitTrackerLibrary
 
             for (int i = 0; i < iterations; i++)
             {
-                InsertRecord("Habits", "Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
-                InsertRecord("Habits", "Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 5));
+                //InsertRecord("Habits", "Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
+                //InsertRecord("Habits", "Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 5));
 
                 date.AddDays(1);
             }
@@ -147,12 +147,8 @@ namespace HabitTrackerLibrary
 
 
         //Validation on whether data already exists before performing operations
-        public void InsertRecord(string tableName, string habitName, string date, int quantity)
+        public void InsertRecord(string tableName, int habitId, string date, int quantity)
         {
-            // Get foreign key data for HabitName and pass it through
-
-            int habitId = 0;
-
             Execute($"insert into {tableName}(HabitId, Date, Quantity) values({habitId}, '{date}', '{quantity}')");
         }
 
@@ -183,7 +179,10 @@ namespace HabitTrackerLibrary
             Execute($"delete from habits where id = '{recordId}'");
         }
 
-
+        public HabitModel GetHabitByName(string name)
+        {
+            throw new NotImplementedException();
+        }
 
 
         public List<HabitRecordModel> GetAllRecords(string tableName) // Probably need to create separate method for Habits table
