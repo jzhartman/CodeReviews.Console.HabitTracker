@@ -7,9 +7,16 @@ using System.Threading.Tasks;
 
 namespace HabitTracker
 {
+    /*
+     *  Need to write out the overall application flow for menu items
+     *      Where do we start?
+     *      How to select and view habits
+     *      how to add or delete habits?
+     */
+
     internal static class ConsoleUI
     {
-        internal static void PrintHabitsList(DataAccess db)
+        internal static void PrintHabitsList(SqliteDataAccess db)
         {
             var habits = db.GetAllHabits();
 
@@ -29,8 +36,9 @@ namespace HabitTracker
             Console.WriteLine("\t2: Insert Record");
             Console.WriteLine("\t3: Delete Record");
             Console.WriteLine("\t4: Update Record");
-            Console.WriteLine();
+            Console.WriteLine();  
         }
+
         internal static void MenuSelection()
         {
             Console.Clear();

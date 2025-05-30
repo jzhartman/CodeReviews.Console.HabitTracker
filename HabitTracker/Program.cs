@@ -5,17 +5,24 @@ using System.Globalization;
 
 namespace HabitTracker
 {
+
+    // Things seem decent... Need to continue from here and get it setup to work the way I planned previously
+    // May need to pause and put more thought into the overall DB structure
+    //      > How do Habits interact with Habit Records
+    //      > Deleting a Habit deletes all records?
     internal class Program
     {
         private static string connectionString = @"Data Source=HabitTracker.db";
-        private static DataAccess db = new DataAccess(connectionString);
+        private static SqliteDataAccess db = new SqliteDataAccess(connectionString);
 
 
         static void Main(string[] args)
         {
+            db.InitializeTables();
+            ConsoleUI.MenuSelection();
 
 
-            //ConsoleUI.PrintHabitsList(db);
+            ConsoleUI.PrintHabitsList(db);
 
             //db.InsertRecord("drinkingWater", "2025-03-07", 25);
             //db.UpdateRecord("drinkingWater", 8, "2024-03-07", 25);
@@ -32,8 +39,6 @@ namespace HabitTracker
             //    Console.WriteLine($"{record.i + 1}: Drank {record.value.Quantity} units on {record.value.Date.ToString("yyyy-MM-dd")}");
             //}
 
-            //db.InitializeTables();
-            //MenuSelection();
         }
 
 

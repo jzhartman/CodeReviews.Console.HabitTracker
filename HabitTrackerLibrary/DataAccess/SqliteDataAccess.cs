@@ -1,41 +1,17 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Globalization;
 using HabitTrackerLibrary.Models;
+using HabitTrackerLibrary.DataAccess;
 
 namespace HabitTrackerLibrary
 {
-    public class DataAccess
+    public class SqliteDataAccess
     {
         public string connectionStringName { get; set; }
 
-        public DataAccess(string connectionString)
+        public SqliteDataAccess(string connectionString)
         {
             this.connectionStringName = connectionString;
-        }
-
-        public void InitializeTables() // She needs a lot of work.........
-        {
-            using (var connection = new SqliteConnection(connectionStringName))
-            {
-                connection.Open();
-
-                var tableCmd = connection.CreateCommand();
-
-                tableCmd.CommandText = @"
-                    CREATE TABLE IF NOT EXISTS habits
-                    (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT,
-                        Date TEXT,
-                        Quantity INTEGER,
-                        Units TEXT
-                    )";
-
-                tableCmd.ExecuteNonQuery();
-
-                connection.Close();
-            }
-
         }
 
         private void Execute(string sql)
@@ -52,18 +28,143 @@ namespace HabitTrackerLibrary
             }
         }
 
-        public void InsertRecord(string tableName, string date, int quantity)
+        /*  
+         *  INTITIALIZE ALL TABLES
+         *  
+         */
+
+
+        // DB created when app runs -- base seed data on empty tables
+
+        public void InitializeTables()
         {
-            Execute($"insert into {tableName}(Date, Quantity) values('{date}', '{quantity}')");
+            InitializeUnitsTable();
+            InitializeHabitsTable();
+            InitializeRecordsTable();
+
+            if (RecordExists("Records") == false)
+            {
+                //Execute(DBInitializationData.InitDataRecords);
+            }
+        }
+
+        public void InitializeUnitsTable()
+        {
+            Execute(
+                @"  CREATE TABLE IF NOT EXISTS Units
+                    (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        NameSingle TEXT,
+                        NamePlural TEXT
+                    );
+                ");
+
+            SeedUnitsTableData();
+        }
+
+        public void SeedUnitsTableData()
+        {
+            if (RecordExists("Units") == false)
+            {
+                Execute(
+                    @"  INSERT INTO Units (NameSingle, NamePlural)
+                        SELECT 'Unit', 'Units' UNION ALL
+                        SELECT 'Glass', 'Glasses' UNION ALL
+                        SELECT 'Book', 'Books' UNION ALL
+                        SELECT 'kCal', 'kCal' UNION ALL
+                        SELECT 'Time', 'Times' UNION ALL
+                        SELECT 'Rep', 'Reps'
+                    ");
+            }
+        }
+
+        public void InitializeHabitsTable()
+        {
+            Execute(
+                @" CREATE TABLE IF NOT EXISTS Habits
+                    (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Name TEXT,
+                        UnitsId INTEGER,
+                        FOREIGN KEY (UnitsId) REFERENCES Units(Id)
+                    )
+                ");
+
+            SeedHabitsTableData();
+        }
+
+        public void SeedHabitsTableData()
+        {
+            if (RecordExists("Habits") == false)
+            {
+                Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glass", "Glasses"));
+                Execute(GenerateHabitsSeedDataSql("Reading Books", "Book", "Books"));
+            }
+        }
+
+        public string GenerateHabitsSeedDataSql(string habitName, string nameSingle, string namePlural)
+        {
+            return @$"  INSERT INTO Units (NameSingle, NamePlural)
+                        SELECT '{nameSingle}', '{namePlural}'
+                        WHERE NOT EXISTS (SELECT 1 FROM Units WHERE NameSingle = '{nameSingle}');
+
+                        INSERT INTO Habits (Name, UnitsId)
+                        SELECT '{habitName}', (select Id from Units where NameSingle = '{nameSingle}')
+                        WHERE NOT EXISTS (SELECT 1 FROM Habits WHERE Name = '{habitName}');";
+        }
+
+        public void InitializeRecordsTable()
+        {
+            Execute(
+                @" CREATE TABLE IF NOT EXISTS Records
+                    (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        HabitId INTEGER,
+                        Date TEXT,
+                        Quantity INTEGER,
+                        FOREIGN KEY (HabitId) REFERENCES Habits(Id)
+                    )
+                ");
+        }
+
+        public void GenerateRecordsSeedData()
+        {
+            int iterations = 10;
+            DateTime date = DateTime.Now.AddDays(-iterations);
+            Random rnd = new Random();
+
+            SeedHabitsTableData();
+
+            for (int i = 0; i < iterations; i++)
+            {
+                InsertRecord("Habits", "Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
+                InsertRecord("Habits", "Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 5));
+
+                date.AddDays(1);
+            }
+        }
+
+
+
+        //Validation on whether data already exists before performing operations
+        public void InsertRecord(string tableName, string habitName, string date, int quantity)
+        {
+            // Get foreign key data for HabitName and pass it through
+
+            int habitId = 0;
+
+            Execute($"insert into {tableName}(HabitId, Date, Quantity) values({habitId}, '{date}', '{quantity}')");
         }
 
         public void UpdateRecord(string tableName, int recordId, string date, int quantity)
         {
+            //Valiate if record exists
             Execute($"update {tableName} set Date = '{date}', quantity = '{quantity}' where Id = {recordId}");
         }
 
         public void DeleteRecord(string tableName, int recordId)
         {
+            //Validate if record exists
             Execute($"delete from {tableName} where id = '{recordId}'");
         }
 
@@ -81,6 +182,9 @@ namespace HabitTrackerLibrary
         {
             Execute($"delete from habits where id = '{recordId}'");
         }
+
+
+
 
         public List<HabitRecordModel> GetAllRecords(string tableName) // Probably need to create separate method for Habits table
         {
@@ -148,7 +252,7 @@ namespace HabitTrackerLibrary
             }
         }
 
-        public bool RecordExists(string tableName, int recordId)
+        public bool RecordExists(string tableName, int recordId = -1)
         {
             bool recordExists = false;
 
@@ -157,8 +261,15 @@ namespace HabitTrackerLibrary
                 connection.Open();
                 var checkCmd = connection.CreateCommand();
 
-                checkCmd.CommandText = $"select exists (Select 1 from {tableName} where Id = {recordId}";
+                if(recordId < 0)
+                {
+                    checkCmd.CommandText = $"select exists (Select 1 from {tableName})";
+                }
+                else
+                {
+                    checkCmd.CommandText = $"select exists (Select 1 from {tableName} where Id = {recordId}";
 
+                }
 
                 int checkQuery = Convert.ToInt32(checkCmd.ExecuteScalar());
 
