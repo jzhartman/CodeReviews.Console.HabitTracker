@@ -185,15 +185,15 @@ namespace HabitTrackerLibrary
         }
 
 
-        public List<HabitRecordModel> GetAllRecords(string tableName) // Probably need to create separate method for Habits table
+        public List<RecordModel> GetAllRecords(int habitId) // Probably need to create separate method for Habits table
         {
             using (var connection = new SqliteConnection(connectionStringName))
             {
                 connection.Open();
                 var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"select * from {tableName}";
+                tableCmd.CommandText = $"select Id, Date, Quantity from Records where records.HabitId = {habitId}";
 
-                List<HabitRecordModel> tableData = new();
+                List<RecordModel> tableData = new();
 
                 SqliteDataReader reader = tableCmd.ExecuteReader();
 
@@ -202,7 +202,7 @@ namespace HabitTrackerLibrary
                     while (reader.Read())
                     {
                         tableData.Add(
-                            new HabitRecordModel
+                            new RecordModel
                             {
                                 Id = reader.GetInt32(0),
                                 Date = DateTime.ParseExact(reader.GetString(1), "yyyy-MM-dd", new CultureInfo("en-US")),
@@ -224,7 +224,9 @@ namespace HabitTrackerLibrary
             {
                 connection.Open();
                 var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = $"select * from habits";
+                tableCmd.CommandText = @$"select habits.Id as HabitId, habits.Name as HabitName, Units.NamePlural as UnitsPlural, Units.NameSingle as UnitsSingle
+                                          from habits
+                                          inner join units on habits.UnitsId = Units.Id";
 
                 List<HabitModel> tableData = new();
 
@@ -237,9 +239,10 @@ namespace HabitTrackerLibrary
                         tableData.Add(
                             new HabitModel
                             {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                Units = reader.GetString(2),
+                                HabitId = reader.GetInt32(0),
+                                HabitName = reader.GetString(1),
+                                UnitsPlural = reader.GetString(2),
+                                UnitsSingle = reader.GetString(3),
                             }
                          );
                     }

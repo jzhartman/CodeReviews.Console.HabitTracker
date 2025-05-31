@@ -8,8 +8,9 @@ namespace HabitTrackerLibrary.Models
 {
     public class HabitModel
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Units { get; set; }
+        public int HabitId { get; set; }
+        public string HabitName { get; set; }
+        public string UnitsPlural { get; set; }
+        public string UnitsSingle { get; set; }
     }
 }

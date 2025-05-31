@@ -10,10 +10,11 @@ using System.Threading.Tasks;
 namespace HabitTracker
 {
     /*
-     *  Currently working on: TrackHabit method
-     *      - Inputs working so far
-     *      - HabitModel stores UnitsID and not actual unit data -- need to figure out how to map this with ADO
-     *      - Insert Record works!
+     *  Currently working on: ViewHabit method
+     *      - So far can select and view records from a habit
+     *      - Need to add in options to update or delete a specific record
+     *      
+     *  Need to add a way to allow user to cancel input operation....
      */
 
     internal static class ConsoleUI
@@ -28,7 +29,25 @@ namespace HabitTracker
 
             foreach (var habit in habits.Select((value, i) => (value, i)))
             {
-                Console.WriteLine($"\t{habit.i + 1}: {habit.value.Name}");
+                Console.WriteLine($"\t{habit.i + 1}: {habit.value.HabitName}");
+            }
+
+            Console.WriteLine();
+        }
+
+        internal static void PrintRecordsList(SqliteDataAccess db, HabitModel habit)
+        {
+            var records = db.GetAllRecords(habit.HabitId);
+
+            List<RecordModel> sortedRecords = records.OrderBy(o => o.Date).ToList();
+
+            Console.WriteLine($"Records List for {habit.HabitName}");
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine();
+
+            foreach (var record in sortedRecords.Select((value, i) => (value, i)))
+            {
+                Console.WriteLine($"\t{record.i + 1}: {record.value.Date.ToString("yyyy-MM-dd")}\t{record.value.Quantity}\t{habit.UnitsPlural}");
             }
 
             Console.WriteLine();
@@ -48,7 +67,7 @@ namespace HabitTracker
             Console.WriteLine("Select an option below by entering the menu item number:");
             Console.WriteLine();
             Console.WriteLine("\t1: Track Habit");
-            Console.WriteLine("\t2: View  Habit");
+            Console.WriteLine("\t2: View Habit");
             Console.WriteLine("\t3: Add New Habit");
             Console.WriteLine("\t4: Delete Habit");
             Console.WriteLine("\t5: Exit Application");
@@ -75,6 +94,7 @@ namespace HabitTracker
                         TrackHabit(db);
                         break;
                     case "2":
+                        ViewHabit(db);
                         break;
                     case "3":
                         break;
@@ -95,44 +115,70 @@ namespace HabitTracker
             }
         }
 
+        private static HabitModel SelectHabitFromList(SqliteDataAccess db, string action)
+        {
+            var habitList = db.GetAllHabits();
+
+            int userSelection = GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
+            var habit = habitList[userSelection - 1];
+
+            //Console.WriteLine();
+            //Console.WriteLine($"Selected Habit: {habit.HabitName}");
+            //Console.WriteLine();
+
+            return habit;
+        }
+
+        private static void ViewHabit(SqliteDataAccess db)
+        {
+            Console.Clear();
+            WelcomeMessage();
+            PrintHabitsList(db);
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine();
+
+            var habit = SelectHabitFromList(db, "view");
+
+            Console.Clear();
+            WelcomeMessage();
+            PrintRecordsList(db, habit);
+
+            PressAnyKeyToContinue();
+        }
+
         private static void TrackHabit(SqliteDataAccess db)
         {
             Console.Clear();
             WelcomeMessage();
             PrintHabitsList(db);
             Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine("Track Habit");
             Console.WriteLine();
 
 
-            var habitList = db.GetAllHabits();
+            var habit = SelectHabitFromList(db, "track");
 
-            int userSelection = GetNumberInput("Enter ID of the Habit you wish to track: ", 1, habitList.Count());
-            var trackedHabit = habitList[userSelection - 1];
-
+            Console.Clear();
+            WelcomeMessage();
+            Console.WriteLine($"Tracking record for {habit.HabitName}");
+            Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine();
-            Console.WriteLine($"Selected habit: {trackedHabit.Name}");
 
-
-            var date = GetDateInput($"Enter the date when {trackedHabit.Name} occurred using YYYY-MM-DD format (leave blanke to add today's date): ");
+            var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blanke to add today's date): ");
 
             Debug.WriteLine($"Date Input: {date.ToString("yyyy-MM-dd")}");
 
-            var quantity = GetNumberInput($"Enter the quantity to record (Unit = {trackedHabit.Units}): ", 1, Int32.MaxValue);
+            var quantity = GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitsPlural}): ", 1, Int32.MaxValue);
 
             Console.WriteLine();
-            Console.WriteLine($"Adding record of {quantity} units of {trackedHabit.Name} on {date.ToString("yyyy-MM-dd")}!");
+            Console.WriteLine($"Adding record of {quantity} {habit.UnitsPlural} of {habit.HabitName} on {date.ToString("yyyy-MM-dd")}!");
 
-            db.InsertRecord("Records", trackedHabit.Id, date.ToString("yyyy-MM-dd"), quantity);
+            db.InsertRecord("Records", habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
 
             PressAnyKeyToContinue();
         }
 
 
-        //internal static void ReturnToMainMenu(string input)
-        //{
-        //    if (input == "0") MainMenu();
-        //}
+
         internal static string GetUserInput(string message)
         {
             Console.Write(message);
@@ -189,7 +235,6 @@ namespace HabitTracker
 
             return output;
         }
-
         internal static void PressAnyKeyToContinue()
         {
             Console.WriteLine();
