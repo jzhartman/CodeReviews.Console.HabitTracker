@@ -6,14 +6,20 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitTracker
 {
     /*
      *  Currently working on: ViewHabit method
      *      - So far can select and view records from a habit
+     *      - Can add a record from View Habit menu -- needs more work on what happens next (return to menu, reprint, or ....?)
      *      - Need to add in options to update or delete a specific record
-     *      
+     *  
+     *  Needs
+     *      - Flesh out DeleteRecord method
+     *      - Flesh out UpdateRecord method
+     *  
      *  Need to add a way to allow user to cancel input operation....
      */
 
@@ -131,19 +137,103 @@ namespace HabitTracker
 
         private static void ViewHabit(SqliteDataAccess db)
         {
-            Console.Clear();
-            WelcomeMessage();
-            PrintHabitsList(db);
+            bool returnToMainMenu = false;
+
+
+                Console.Clear();
+                WelcomeMessage();
+                PrintHabitsList(db);
+                Console.WriteLine("---------------------------------------------------------");
+                Console.WriteLine();
+
+                var habit = SelectHabitFromList(db, "view");
+
+            while (returnToMainMenu == false)
+            {
+                Console.Clear();
+                WelcomeMessage();
+                PrintRecordsList(db, habit);
+
+                returnToMainMenu = Menu_ViewHabits(db, habit); 
+            }            
+        }
+
+        private static bool Menu_ViewHabits(SqliteDataAccess db, HabitModel habit)
+        {
+            bool returnToMainMenu = false;
+            bool validInput = false;
+
             Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine("Select an option below by entering the menu item number:");
+            Console.WriteLine();
+            Console.WriteLine("\t1: Add Record");
+            Console.WriteLine("\t2: Delete Record");
+            Console.WriteLine("\t3: Change Record");
+            Console.WriteLine("\t4: Return to Main Menu");
+            Console.WriteLine();
+            Console.WriteLine("---------------------------------------------------------");
+            
+            while (validInput == false)
+            {
+                int userSelection = GetNumberInput("Enter menu selection: ", 1, 5);
+                string commandInput = userSelection.ToString();
+
+                switch (commandInput)
+                {
+                    case "1":
+                        CreateRecord(db, habit);
+                        validInput = true;
+                        //returnToMainMenu = true;
+                        // Goes to top of loop when complete.... Where else should it go?????
+                        // Reprint menus? 
+                        break;
+                    case "2":
+                        DeleteHabitRecord();
+                        validInput = true;
+                        break;
+                    case "3":
+                        UpdateHabitRecord(db, habit);
+                        validInput = true;
+                        break;
+                    case "4":
+                        Console.WriteLine("Returning to main menu...");
+                        validInput = true;
+                        returnToMainMenu = true;
+                        break;
+                    default:
+                        validInput = false;
+                        Console.WriteLine();
+                        Console.WriteLine("ERROR - Invalid selection detected");
+                        break;
+                }
+                PressAnyKeyToContinue();
+            }
+
+            return returnToMainMenu;
+        }
+
+        private static void DeleteHabitRecord()
+        {
+            Console.WriteLine("Someday this will delete a record...");
+            PressAnyKeyToContinue();
             Console.WriteLine();
 
-            var habit = SelectHabitFromList(db, "view");
+            //Select record ID
+            //Delete
+        }
 
-            Console.Clear();
-            WelcomeMessage();
-            PrintRecordsList(db, habit);
-
+        private static void UpdateHabitRecord(SqliteDataAccess db, HabitModel habit)
+        {
+            Console.WriteLine("Someday this will let you update...");
             PressAnyKeyToContinue();
+            Console.WriteLine();
+
+            //Print current date
+            //Enter new date -- blank == no change
+            //Print current quantity
+            //Enter new quantity - blank == no change
+            //Print new data (maybe in reference to old?)
+            //UpdateRecord
         }
 
         private static void TrackHabit(SqliteDataAccess db)
@@ -159,22 +249,35 @@ namespace HabitTracker
 
             Console.Clear();
             WelcomeMessage();
-            Console.WriteLine($"Tracking record for {habit.HabitName}");
-            Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine();
 
+            CreateRecord(db, habit);
+
+            PressAnyKeyToContinue();
+        }
+
+        private static (DateOnly date, int quantity) GetRecordData(HabitModel habit)
+        {
             var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blanke to add today's date): ");
 
             Debug.WriteLine($"Date Input: {date.ToString("yyyy-MM-dd")}");
 
             var quantity = GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitsPlural}): ", 1, Int32.MaxValue);
 
+            return (date, quantity);
+        }
+
+        private static void CreateRecord(SqliteDataAccess db, HabitModel habit)
+        {
+            Console.WriteLine($"Tracking record for {habit.HabitName}");
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine();
+
+            (DateOnly date, int quantity) = GetRecordData(habit);
+
             Console.WriteLine();
             Console.WriteLine($"Adding record of {quantity} {habit.UnitsPlural} of {habit.HabitName} on {date.ToString("yyyy-MM-dd")}!");
 
             db.InsertRecord("Records", habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
-
-            PressAnyKeyToContinue();
         }
 
 
