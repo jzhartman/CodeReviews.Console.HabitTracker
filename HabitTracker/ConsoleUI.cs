@@ -137,16 +137,25 @@ namespace HabitTracker
 
         private static void ViewHabit(SqliteDataAccess db)
         {
+                
+            ViewHabit_PrintHabitList(db);
+            var habit = SelectHabitFromList(db, "view");
+            ViewHabit_PrintRecordsList(db, habit);
+         
+        }
+
+        private static void ViewHabit_PrintHabitList(SqliteDataAccess db)
+        {
+            Console.Clear();
+            WelcomeMessage();
+            PrintHabitsList(db);
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine();
+        }
+
+        private static void ViewHabit_PrintRecordsList(SqliteDataAccess db, HabitModel habit)
+        {
             bool returnToMainMenu = false;
-
-
-                Console.Clear();
-                WelcomeMessage();
-                PrintHabitsList(db);
-                Console.WriteLine("---------------------------------------------------------");
-                Console.WriteLine();
-
-                var habit = SelectHabitFromList(db, "view");
 
             while (returnToMainMenu == false)
             {
@@ -154,15 +163,12 @@ namespace HabitTracker
                 WelcomeMessage();
                 PrintRecordsList(db, habit);
 
-                returnToMainMenu = Menu_ViewHabits(db, habit); 
-            }            
+                returnToMainMenu = ViewHabit_HandleUserSelection(db, habit);
+            }
         }
 
-        private static bool Menu_ViewHabits(SqliteDataAccess db, HabitModel habit)
+        private static void ViewHabit_PrintSubMenu()
         {
-            bool returnToMainMenu = false;
-            bool validInput = false;
-
             Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine("Select an option below by entering the menu item number:");
             Console.WriteLine();
@@ -172,6 +178,14 @@ namespace HabitTracker
             Console.WriteLine("\t4: Return to Main Menu");
             Console.WriteLine();
             Console.WriteLine("---------------------------------------------------------");
+        }
+
+        private static bool ViewHabit_HandleUserSelection(SqliteDataAccess db, HabitModel habit)
+        {
+            bool returnToMainMenu = false;
+            bool validInput = false;
+
+            ViewHabit_PrintSubMenu();
             
             while (validInput == false)
             {
@@ -183,9 +197,6 @@ namespace HabitTracker
                     case "1":
                         CreateRecord(db, habit);
                         validInput = true;
-                        //returnToMainMenu = true;
-                        // Goes to top of loop when complete.... Where else should it go?????
-                        // Reprint menus? 
                         break;
                     case "2":
                         DeleteHabitRecord();
