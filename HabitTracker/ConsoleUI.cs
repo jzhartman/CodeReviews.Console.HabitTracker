@@ -11,10 +11,12 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace HabitTracker
 {
     /*
+     * 
      *  Currently working on: ViewHabit method
-     *      - So far can select and view records from a habit
-     *      - Can add a record from View Habit menu -- needs more work on what happens next (return to menu, reprint, or ....?)
-     *      - Need to add in options to update or delete a specific record
+     *      - (COMPLETE) Print all records for a selected habit
+     *      - (COMPLETE) Add new record to list, then reprint
+     *      - (COMPLETE) Delete a record from the list, then reprint
+     *      - Update a record in the list, then reprint
      *  
      *  Needs
      *      - Flesh out DeleteRecord method
@@ -41,11 +43,17 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal static void PrintRecordsList(SqliteDataAccess db, HabitModel habit)
+        internal static List<RecordModel> GetSortedRecordsList(SqliteDataAccess db, HabitModel habit)
         {
             var records = db.GetAllRecords(habit.HabitId);
 
             List<RecordModel> sortedRecords = records.OrderBy(o => o.Date).ToList();
+
+            return sortedRecords;
+        }
+        internal static void PrintRecordsList(List<RecordModel> sortedRecords, HabitModel habit)
+        {
+            //var sortedRecords = GetSortedRecordsList(db, habit);
 
             Console.WriteLine($"Records List for {habit.HabitName}");
             Console.WriteLine("---------------------------------------------------------");
@@ -100,7 +108,7 @@ namespace HabitTracker
                         TrackHabit(db);
                         break;
                     case "2":
-                        ViewHabit(db);
+                        ViewHabitRecords(db);
                         break;
                     case "3":
                         break;
@@ -128,23 +136,19 @@ namespace HabitTracker
             int userSelection = GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
             var habit = habitList[userSelection - 1];
 
-            //Console.WriteLine();
-            //Console.WriteLine($"Selected Habit: {habit.HabitName}");
-            //Console.WriteLine();
-
             return habit;
         }
 
-        private static void ViewHabit(SqliteDataAccess db)
+        private static void ViewHabitRecords(SqliteDataAccess db)
         {
                 
-            ViewHabit_PrintHabitList(db);
+            ViewHabitRecords_PrintHabitList(db);
             var habit = SelectHabitFromList(db, "view");
-            ViewHabit_PrintRecordsList(db, habit);
+            ViewHabitRecords_PrintRecordsList(db, habit);
          
         }
 
-        private static void ViewHabit_PrintHabitList(SqliteDataAccess db)
+        private static void ViewHabitRecords_PrintHabitList(SqliteDataAccess db)
         {
             Console.Clear();
             WelcomeMessage();
@@ -153,21 +157,23 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        private static void ViewHabit_PrintRecordsList(SqliteDataAccess db, HabitModel habit)
+        private static void ViewHabitRecords_PrintRecordsList(SqliteDataAccess db, HabitModel habit)
         {
             bool returnToMainMenu = false;
 
             while (returnToMainMenu == false)
             {
+                var sortedRecords = GetSortedRecordsList(db, habit);
+
                 Console.Clear();
                 WelcomeMessage();
-                PrintRecordsList(db, habit);
+                PrintRecordsList(sortedRecords, habit);
 
-                returnToMainMenu = ViewHabit_HandleUserSelection(db, habit);
+                returnToMainMenu = ViewHabitRecords_HandleUserSelection(db, habit, sortedRecords);
             }
         }
 
-        private static void ViewHabit_PrintSubMenu()
+        private static void ViewHabitRecords_PrintSubMenu()
         {
             Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine("Select an option below by entering the menu item number:");
@@ -180,12 +186,12 @@ namespace HabitTracker
             Console.WriteLine("---------------------------------------------------------");
         }
 
-        private static bool ViewHabit_HandleUserSelection(SqliteDataAccess db, HabitModel habit)
+        private static bool ViewHabitRecords_HandleUserSelection(SqliteDataAccess db, HabitModel habit, List<RecordModel> sortedRecords)
         {
             bool returnToMainMenu = false;
             bool validInput = false;
 
-            ViewHabit_PrintSubMenu();
+            ViewHabitRecords_PrintSubMenu();
             
             while (validInput == false)
             {
@@ -199,7 +205,7 @@ namespace HabitTracker
                         validInput = true;
                         break;
                     case "2":
-                        DeleteHabitRecord();
+                        DeleteHabitRecord(db, sortedRecords, habit);
                         validInput = true;
                         break;
                     case "3":
@@ -223,14 +229,44 @@ namespace HabitTracker
             return returnToMainMenu;
         }
 
-        private static void DeleteHabitRecord()
+        private static void DeleteHabitRecord(SqliteDataAccess db, List<RecordModel> sortedRecords, HabitModel habit)
         {
-            Console.WriteLine("Someday this will delete a record...");
-            PressAnyKeyToContinue();
+            var record = SelectRecordFromList(db, sortedRecords, "delete", habit);
             Console.WriteLine();
+            Console.WriteLine($"Preparing to delete record for {record.Quantity} {habit.UnitsPlural} of {habit.HabitName} on {record.Date}");
 
-            //Select record ID
-            //Delete
+
+            bool responseValid = false;
+
+            while (responseValid == false)
+            {
+                string response = GetUserInput("Confirm delete: Press \"Y\" for yes or \"N\" for no: ");
+
+                if (response.ToLower() == "y")
+                {
+                    Console.WriteLine("Record successfuly deleted!");
+                    db.DeleteRecord("Records", record.Id);
+                    responseValid = true;
+                }
+                else if (response.ToLower() == "n")
+                {
+                    Console.WriteLine("Delete cancelled!");
+                    responseValid = true;
+                }
+                else
+                {
+                    Console.Write("INVALID RESPONSE! ");
+                    responseValid = false;
+                } 
+            }
+        }
+
+        private static RecordModel SelectRecordFromList(SqliteDataAccess db, List<RecordModel> sortedRecords, string action, HabitModel habit)
+        {
+            int userSelection = GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
+            var record = sortedRecords[userSelection - 1];
+
+            return record;
         }
 
         private static void UpdateHabitRecord(SqliteDataAccess db, HabitModel habit)
