@@ -16,11 +16,12 @@ namespace HabitTracker
      *      - (COMPLETE) Print all records for a selected habit
      *      - (COMPLETE) Add new record to list, then reprint
      *      - (COMPLETE) Delete a record from the list, then reprint
-     *      - Update a record in the list, then reprint
+     *      - (COMPLETE) Update a record in the list, then reprint
      *  
      *  Needs
-     *      - Flesh out DeleteRecord method
-     *      - Flesh out UpdateRecord method
+     *      - (COMPLETE) Finish ViewRecord method
+     *      - Add New Habit
+     *      - Delete Habit
      *  
      *  Need to add a way to allow user to cancel input operation....
      */
@@ -209,7 +210,7 @@ namespace HabitTracker
                         validInput = true;
                         break;
                     case "3":
-                        UpdateHabitRecord(db, habit);
+                        UpdateHabitRecord(db, sortedRecords, habit);
                         validInput = true;
                         break;
                     case "4":
@@ -231,7 +232,7 @@ namespace HabitTracker
 
         private static void DeleteHabitRecord(SqliteDataAccess db, List<RecordModel> sortedRecords, HabitModel habit)
         {
-            var record = SelectRecordFromList(db, sortedRecords, "delete", habit);
+            var record = SelectRecordFromList(sortedRecords, "delete", habit);
             Console.WriteLine();
             Console.WriteLine($"Preparing to delete record for {record.Quantity} {habit.UnitsPlural} of {habit.HabitName} on {record.Date}");
 
@@ -261,7 +262,7 @@ namespace HabitTracker
             }
         }
 
-        private static RecordModel SelectRecordFromList(SqliteDataAccess db, List<RecordModel> sortedRecords, string action, HabitModel habit)
+        private static RecordModel SelectRecordFromList(List<RecordModel> sortedRecords, string action, HabitModel habit)
         {
             int userSelection = GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
             var record = sortedRecords[userSelection - 1];
@@ -269,18 +270,79 @@ namespace HabitTracker
             return record;
         }
 
-        private static void UpdateHabitRecord(SqliteDataAccess db, HabitModel habit)
+        private static void UpdateHabitRecord(SqliteDataAccess db, List<RecordModel> sortedRecords, HabitModel habit)
         {
-            Console.WriteLine("Someday this will let you update...");
-            PressAnyKeyToContinue();
-            Console.WriteLine();
+            string confirmationCheck = string.Empty; ;
+            bool dateChanged = true;
 
-            //Print current date
-            //Enter new date -- blank == no change
-            //Print current quantity
-            //Enter new quantity - blank == no change
-            //Print new data (maybe in reference to old?)
-            //UpdateRecord
+            var record = SelectRecordFromList(sortedRecords, "change", habit);
+            Console.WriteLine();
+            Console.WriteLine($"Changing record for {record.Quantity} {habit.UnitsPlural} of {habit.HabitName} on {record.Date.ToString("yyyy-MM-dd")}");
+
+
+            var newDate = GetDateInput($"Enter the new date (or press enter to keep original date): ", "original");
+
+            if (newDate == DateOnly.MinValue)
+            {
+                newDate = DateOnly.FromDateTime(record.Date);
+                dateChanged = false;
+            }
+            else
+            {
+                confirmationCheck = $"Changed date from {record.Date.ToString("yyyy-MM-dd")} to {newDate.ToString("yyyy-MM-dd")}";
+            }
+
+            var newQuantity = GetNumberInput($"Enter the new quantity for the record (or press enter to keep original quantity): ", 1, Int32.MaxValue, true);
+
+            if (newQuantity == Int32.MinValue)
+            {
+                newQuantity = record.Quantity;
+
+                if (dateChanged)
+                {
+                    confirmationCheck += ".";
+                }
+            }
+            else
+            {
+                if (dateChanged)
+                {
+                    confirmationCheck += $" and changed quantity from {record.Quantity} to {newQuantity}.";
+                }
+                else
+                {
+                    confirmationCheck = $"Changed quantity from {record.Quantity} to {newQuantity}.";
+                }
+            }
+
+                bool responseValid = false;
+
+            if (DateOnly.FromDateTime(record.Date) == newDate && record.Quantity == newQuantity) confirmationCheck = "No changes made to record.";
+
+            Console.WriteLine(confirmationCheck);
+
+
+            while (responseValid == false)
+            {
+                string response = GetUserInput("Confirm update: Press \"Y\" for yes or \"N\" for no: ");
+
+                if (response.ToLower() == "y")
+                {
+                    Console.WriteLine("Record successfuly updated!");
+                    db.UpdateRecord("Records", record.Id, newDate.ToString("yyyy-MM-dd"), newQuantity);
+                    responseValid = true;
+                }
+                else if (response.ToLower() == "n")
+                {
+                    Console.WriteLine("Update cancelled!");
+                    responseValid = true;
+                }
+                else
+                {
+                    Console.Write("INVALID RESPONSE! ");
+                    responseValid = false;
+                } 
+            }
         }
 
         private static void TrackHabit(SqliteDataAccess db)
@@ -304,7 +366,7 @@ namespace HabitTracker
 
         private static (DateOnly date, int quantity) GetRecordData(HabitModel habit)
         {
-            var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blanke to add today's date): ");
+            var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blanke to add today's date): ", "today");
 
             Debug.WriteLine($"Date Input: {date.ToString("yyyy-MM-dd")}");
 
@@ -334,7 +396,7 @@ namespace HabitTracker
             Console.Write(message);
             return Console.ReadLine();
         }
-        internal static int GetNumberInput(string message, int min, int max)
+        internal static int GetNumberInput(string message, int min, int max, bool allowBlanks = false)
         {
             string numberInput = string.Empty;
             int output;
@@ -352,13 +414,19 @@ namespace HabitTracker
 
                 validNumber = (output < min || output > max) ? false : true;
 
+                if (allowBlanks == true && numberInput == "")
+                {
+                    output = Int32.MinValue;
+                    validNumber = true;
+                }
+
             } while (validNumber == false);
 
             return output;
         }
-        internal static DateOnly GetDateInput(string message)
+        internal static DateOnly GetDateInput(string message, string blankBehavior)
         {
-            string dateInput = string.Empty;
+            string dateInput;
             DateOnly output;
             bool firstTime = true;
             bool validDate = false;
@@ -371,8 +439,20 @@ namespace HabitTracker
 
                 if (dateInput == "")
                 {
-                    output = DateOnly.FromDateTime(DateTime.Now);
-                    validDate = true;
+                    if (blankBehavior == "today")
+                    {
+                        output = DateOnly.FromDateTime(DateTime.Now);
+                        validDate = true; 
+                    }
+                    else if (blankBehavior == "original")
+                    {
+                        output = DateOnly.MinValue;
+                        validDate = true;
+                    }
+                    else
+                    {
+                        output = DateOnly.MinValue;
+                    }
                 }
                 else
                 {
