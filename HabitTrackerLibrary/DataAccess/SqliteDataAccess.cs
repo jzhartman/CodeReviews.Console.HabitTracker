@@ -54,8 +54,7 @@ namespace HabitTrackerLibrary
                 @"  CREATE TABLE IF NOT EXISTS Units
                     (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        NameSingle TEXT,
-                        NamePlural TEXT
+                        Name TEXT
                     );
                 ");
 
@@ -67,7 +66,7 @@ namespace HabitTrackerLibrary
             if (RecordExists("Units") == false)
             {
                 Execute(
-                    @"  INSERT INTO Units (NameSingle, NamePlural)
+                    @"  INSERT INTO Units (Name)
                         SELECT 'Unit', 'Units' UNION ALL
                         SELECT 'Glass', 'Glasses' UNION ALL
                         SELECT 'Book', 'Books' UNION ALL
@@ -97,19 +96,19 @@ namespace HabitTrackerLibrary
         {
             if (RecordExists("Habits") == false)
             {
-                Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glass", "Glasses"));
-                Execute(GenerateHabitsSeedDataSql("Reading Books", "Book", "Books"));
+                Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glasses"));
+                Execute(GenerateHabitsSeedDataSql("Reading Books", "Books"));
             }
         }
 
-        public string GenerateHabitsSeedDataSql(string habitName, string nameSingle, string namePlural)
+        public string GenerateHabitsSeedDataSql(string habitName, string unitName)
         {
-            return @$"  INSERT INTO Units (NameSingle, NamePlural)
-                        SELECT '{nameSingle}', '{namePlural}'
-                        WHERE NOT EXISTS (SELECT 1 FROM Units WHERE NameSingle = '{nameSingle}');
+            return @$"  INSERT INTO Units (Name)
+                        SELECT '{unitName}'
+                        WHERE NOT EXISTS (SELECT 1 FROM Units WHERE Name = '{unitName}');
 
                         INSERT INTO Habits (Name, UnitsId)
-                        SELECT '{habitName}', (select Id from Units where NameSingle = '{nameSingle}')
+                        SELECT '{habitName}', (select Id from Units where Name = '{unitName}')
                         WHERE NOT EXISTS (SELECT 1 FROM Habits WHERE Name = '{habitName}');";
         }
 
@@ -144,9 +143,6 @@ namespace HabitTrackerLibrary
             }
         }
 
-
-
-        //Validation on whether data already exists before performing operations
         public void InsertRecord(string tableName, int habitId, string date, int quantity)
         {
             Execute($"insert into {tableName}(HabitId, Date, Quantity) values({habitId}, '{date}', '{quantity}')");
@@ -154,13 +150,11 @@ namespace HabitTrackerLibrary
 
         public void UpdateRecord(string tableName, int recordId, string date, int quantity)
         {
-            //Valiate if record exists
             Execute($"update {tableName} set Date = '{date}', quantity = '{quantity}' where Id = {recordId}");
         }
 
         public void DeleteRecord(string tableName, int recordId)
         {
-            //Validate if record exists
             Execute($"delete from {tableName} where id = '{recordId}'");
         }
 
@@ -179,13 +173,47 @@ namespace HabitTrackerLibrary
             Execute($"delete from habits where id = '{recordId}'");
         }
 
+        public bool CheckIfHabitExists(string habitName)
+        {
+            using (var connection = new SqliteConnection(connectionStringName))
+            {
+                connection.Open();
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = $"SELECT EXISTS (SELECT 1 FROM Habits WHERE Name = '{habitName}' COLLATE NoCase)";
+                var test = tableCmd.ExecuteScalar();
+
+
+                bool habitExists = Convert.ToBoolean(test);
+
+                connection.Close();
+
+                return habitExists;
+            }
+        }
+
+        public bool CheckIfUnitExists(string unitName)
+        {
+            using (var connection = new SqliteConnection(connectionStringName))
+            {
+                connection.Open();
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = $"SELECT EXISTS (SELECT 1 FROM Units WHERE Name = '{unitName}' COLLATE NoCase)";
+
+                bool unitExists = Convert.ToBoolean(tableCmd.ExecuteScalar());
+
+                connection.Close();
+
+                return unitExists;
+            }
+        }
+
         public HabitModel GetHabitByName(string name)
         {
             throw new NotImplementedException();
         }
 
 
-        public List<RecordModel> GetAllRecords(int habitId) // Probably need to create separate method for Habits table
+        public List<RecordModel> GetAllRecords(int habitId)
         {
             using (var connection = new SqliteConnection(connectionStringName))
             {
@@ -218,13 +246,13 @@ namespace HabitTrackerLibrary
             }
         }
 
-        public List<HabitModel> GetAllHabits() // Probably need to create separate method for Habits table
+        public List<HabitModel> GetAllHabits()
         {
             using (var connection = new SqliteConnection(connectionStringName))
             {
                 connection.Open();
                 var tableCmd = connection.CreateCommand();
-                tableCmd.CommandText = @$"select habits.Id as HabitId, habits.Name as HabitName, Units.NamePlural as UnitsPlural, Units.NameSingle as UnitsSingle
+                tableCmd.CommandText = @$"select habits.Id as HabitId, habits.Name as HabitName, Units.Name as UnitsName
                                           from habits
                                           inner join units on habits.UnitsId = Units.Id";
 
@@ -241,8 +269,39 @@ namespace HabitTrackerLibrary
                             {
                                 HabitId = reader.GetInt32(0),
                                 HabitName = reader.GetString(1),
-                                UnitsPlural = reader.GetString(2),
-                                UnitsSingle = reader.GetString(3),
+                                UnitName = reader.GetString(2),
+                            }
+                         );
+                    }
+                }
+
+                connection.Close();
+
+                return tableData;
+            }
+        }
+
+        public List<UnitModel> GetAllUnits()
+        {
+            using (var connection = new SqliteConnection(connectionStringName))
+            {
+                connection.Open();
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = @$"select units.Id as UnitId, units.Name as UnitName from units";
+
+                List<UnitModel> tableData = new();
+
+                SqliteDataReader reader = tableCmd.ExecuteReader();
+
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        tableData.Add(
+                            new UnitModel
+                            {
+                                UnitId = reader.GetInt32(0),
+                                UnitName = reader.GetString(1),
                             }
                          );
                     }

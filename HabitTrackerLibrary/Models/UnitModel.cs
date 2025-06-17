@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace HabitTrackerLibrary.Models
 {
-    public class HabitModel
+    public class UnitModel
     {
-        public int HabitId { get; set; }
-        public string HabitName { get; set; }
+        public int UnitId { get; set; }
         public string UnitName { get; set; }
     }
 }
