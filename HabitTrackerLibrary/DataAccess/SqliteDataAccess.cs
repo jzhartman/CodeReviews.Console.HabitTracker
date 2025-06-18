@@ -158,9 +158,9 @@ namespace HabitTrackerLibrary
             Execute($"delete from {tableName} where id = '{recordId}'");
         }
 
-        public void InsertHabit(string name, string units)
+        public void InsertHabit(string name, string unitName)
         {
-            Execute($"insert into habits (Name, Units) values('{name}', '{units}')");
+            Execute($"insert into habits (Name, UnitsId) values('{name}', (select id from units where units.Name ='{unitName}'))");
         }
 
         public void UpdateHabit(string name, string units, int recordId)
@@ -171,6 +171,11 @@ namespace HabitTrackerLibrary
         public void DeleteHabit(int recordId)
         {
             Execute($"delete from habits where id = '{recordId}'");
+        }
+
+        public void InsertUnit(string name)
+        {
+            Execute($"insert into units (Name) values( '{name}' )");
         }
 
         public bool CheckIfHabitExists(string habitName)

@@ -12,27 +12,22 @@ namespace HabitTracker
 {
     /*
      * 
-     *  Currently working on: Add New Habit feature
-     *      - (COMPLETE) Get habit name from user
-     *      - (COMPLETE) Check if habit name is unique
-     *      - Print Unit List for user
-     *      - Allow user to select unit form list or add new unit
-     *          - Get unit name form user
-     *          - Check if unit name is unique
-     *          - Add unit to table
-     *      - Add habit to table (with unitID as foreign key)
+     *  TODO: Compare menu printing of Add New Habit to model that of the View Habits
+     *  TODO: Allow user to escape entries during input operations
      *  
-     *  Need to add a way to allow user to cancel input operation....
+     *  Completed the Add New Habit
      *  
-     *  Trying to get the logic for getting and validating habit name from user, then need to build a menu for printing and selecting or adding a new unit
-     *  
-     *  
+     *  Next Up: Deleting a habit???
+     *  Next Nect?? Updating a habit????
      */
 
     internal static class ConsoleUI
     {
-        internal static void PrintHabitsList(SqliteDataAccess db)
+        internal static void PrintHabitsList(SqliteDataAccess db, bool printMainMenu)
         {
+            Console.Clear();
+            WelcomeMessage();
+
             var habits = db.GetAllHabits();
 
             Console.WriteLine("Habits List");
@@ -41,16 +36,23 @@ namespace HabitTracker
 
             foreach (var habit in habits.Select((value, i) => (value, i)))
             {
-                Console.WriteLine($"\t{habit.i + 1}: {habit.value.HabitName}");
+                Console.WriteLine($"\t{habit.i + 1}:\t{habit.value.HabitName}");
             }
 
             Console.WriteLine();
+            if (printMainMenu) PrintMainMenu();
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine();
         }
 
-        internal static void PrintUnitsList(SqliteDataAccess db)
+        internal static void PrintUnitsList(SqliteDataAccess db, string habitName)
         {
             var units = db.GetAllUnits();
 
+            Console.WriteLine();
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine($"Select the unit to use when tracking {habitName}:");
+            Console.WriteLine();
             Console.WriteLine("Units List");
             Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine();
@@ -59,6 +61,8 @@ namespace HabitTracker
             {
                 Console.WriteLine($"\t{unit.i + 1}: {unit.value.UnitName}");
             }
+
+            Console.WriteLine($"\t{units.Count + 1}: <Enter New Unit>");
 
             Console.WriteLine();
         }
@@ -114,11 +118,7 @@ namespace HabitTracker
 
             while (closeApp == false)
             {
-                Console.Clear();
-                WelcomeMessage();
-                PrintHabitsList(db);
-                PrintMainMenu();
-                Console.WriteLine("---------------------------------------------------------");
+                PrintHabitsList(db, true);
                 int userSelection = GetNumberInput("Enter menu selection: ", 1, 5);
                 string commandInput = userSelection.ToString();
 
@@ -162,20 +162,9 @@ namespace HabitTracker
 
         private static void ViewHabitRecords(SqliteDataAccess db)
         {
-                
-            ViewHabitRecords_PrintHabitList(db);
+            PrintHabitsList(db, false);
             var habit = SelectHabitFromList(db, "view");
             ViewHabitRecords_PrintRecordsList(db, habit);
-         
-        }
-
-        private static void ViewHabitRecords_PrintHabitList(SqliteDataAccess db)
-        {
-            Console.Clear();
-            WelcomeMessage();
-            PrintHabitsList(db);
-            Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine();
         }
 
         private static void ViewHabitRecords_PrintRecordsList(SqliteDataAccess db, HabitModel habit)
@@ -367,12 +356,7 @@ namespace HabitTracker
 
         private static void TrackHabit(SqliteDataAccess db)
         {
-            Console.Clear();
-            WelcomeMessage();
-            PrintHabitsList(db);
-            Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine();
-
+            PrintHabitsList(db, false);
 
             var habit = SelectHabitFromList(db, "track");
 
@@ -386,7 +370,7 @@ namespace HabitTracker
 
         private static (DateOnly date, int quantity) GetRecordData(HabitModel habit)
         {
-            var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blanke to add today's date): ", "today");
+            var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
 
             Debug.WriteLine($"Date Input: {date.ToString("yyyy-MM-dd")}");
 
@@ -411,62 +395,88 @@ namespace HabitTracker
 
         private static void CreateHabit(SqliteDataAccess db)
         {
+            PrintHabitsList(db, false);
+
             var habitName = GetNewHabitName(db);
 
-            SelectUnitForNewHabit(db, habitName);
+            var unitName = GetUnitForNewHabit(db, habitName);
 
+            ConfirmNewHabitData(db, habitName, unitName);
+
+            PressAnyKeyToContinue();
         }
 
-        private static void SelectUnitForNewHabit(SqliteDataAccess db, string habitName)
+        private static void ConfirmNewHabitData(SqliteDataAccess db, string habitName, string unitName)
         {
+            Console.WriteLine();
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine($"Preparing to add new habit, {habitName}, measured with units, {unitName}.");
+            bool responseValid = false;
 
-            PrintUnitsList(db);
-
-            //var unitName = GetNewUnitName(db);
-            //var unitName = GetUnits("Enter the name of the new unit (singlular): ");
-            //var unitExists = db.CheckIfUnitExists(unitName);
-        }
-
-        private static string GetNewUnitName(SqliteDataAccess db)
-        {
-            var habitName = string.Empty;
-            var status = string.Empty;
-            bool habitExists = true;
-
-            while (habitExists == true)
+            while (responseValid == false)
             {
-                habitName = GetHabitNameFromUser(db);
-                habitExists = db.CheckIfHabitExists(habitName);
+                string response = GetUserInput("To confirm enter \"Y\" for yes or \"N\" for no: ");
+                Console.WriteLine();
 
-                if (habitExists == true)
+                if (response.ToLower() == "y")
                 {
-                    Console.WriteLine("ERROR! Habit already exists");
+                    Console.WriteLine("New habit successfuly added!");
+                    db.InsertUnit(unitName);
+                    db.InsertHabit(habitName, unitName);
+                    responseValid = true;
                 }
-            }
-
-            return habitName;
-        }
-
-        private static string GetUnits(string message)
-        {
-            string unit = string.Empty;
-            bool validUnit = false;
-
-            while (validUnit == false)
-            {
-                unit = GetUserInput(message);
-
-                if (string.IsNullOrWhiteSpace(unit))
+                else if (response.ToLower() == "n")
                 {
-                    Console.WriteLine("INVALID NAME!");
+                    Console.WriteLine("New habit entry cancelled!");
+                    responseValid = true;
                 }
                 else
                 {
-                    validUnit = true;
+                    Console.Write("INVALID RESPONSE! ");
+                    responseValid = false;
                 }
             }
 
-            return unit;
+        }
+
+        private static string GetUnitForNewHabit(SqliteDataAccess db, string habitName)
+        {
+            PrintUnitsList(db, habitName);
+
+            var unitName = string.Empty;
+            var unitList = db.GetAllUnits();
+
+            int userSelection = GetNumberInput($"Enter ID of the unit you wish to use: ", 1, unitList.Count() + 1);
+
+            if (userSelection <= unitList.Count())
+            {
+                unitName = unitList[userSelection - 1].UnitName;
+            }
+            else if(userSelection == unitList.Count() + 1)
+            {
+                unitName = GetNewUnitName(db);
+            }
+
+            return unitName;
+        }
+        private static string GetNewUnitName(SqliteDataAccess db)
+        {
+            var unitName = string.Empty;
+            var status = string.Empty;
+            bool unitExists = true;
+
+            while (unitExists == true)
+            {
+                unitName = GetNameFromUser(db, "unit");
+                unitExists = db.CheckIfUnitExists(unitName);
+
+                if (unitExists == true)
+                {
+                    Console.WriteLine("ERROR! Unit already exists");
+                }
+            }
+
+            return unitName;
         }
 
         private static string GetNewHabitName(SqliteDataAccess db)
@@ -477,7 +487,7 @@ namespace HabitTracker
 
             while (habitExists == true)
             {
-                habitName = GetHabitNameFromUser(db);
+                habitName = GetNameFromUser(db, "habit");
                 habitExists = db.CheckIfHabitExists(habitName);
 
                 if (habitExists == true)
@@ -488,28 +498,26 @@ namespace HabitTracker
 
             return habitName;
         }
-        private static string GetHabitNameFromUser(SqliteDataAccess db)
+        private static string GetNameFromUser(SqliteDataAccess db, string itemType)
         {
-            string habitName = string.Empty;
+            string name = string.Empty;
             bool validName = false;
 
             while (validName == false)
             {
-                habitName = GetUserInput("Enter the name of the new habit: ");
+                name = GetUserInput($"Enter the name of the new {itemType}: ");
 
-                if (string.IsNullOrWhiteSpace(habitName))
+                if (string.IsNullOrWhiteSpace(name))
                 {
-                    Console.WriteLine("INVALID NAME!");
+                    Console.WriteLine($"INVALID {itemType.ToUpper()} NAME!");
                 }
                 else
                 {
                     validName = true;
                 }
-
-                //TODO: Add case to allow user to cancel entry by entering blank string
             }
 
-            return habitName;
+            return name;
         }
 
 
