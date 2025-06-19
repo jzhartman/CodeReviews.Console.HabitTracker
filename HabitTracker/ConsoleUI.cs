@@ -11,8 +11,12 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace HabitTracker
 {
     /*
+     *  ReadMe file
+     *  Parameterized queries
+     *  More seed data!!!!
+     *  Add report functionality
+     *  
      * 
-     *  TODO: Compare menu printing of Add New Habit to model that of the View Habits
      *  TODO: Allow user to escape entries during input operations
      *  
      *  Completed the Add New Habit
@@ -71,14 +75,12 @@ namespace HabitTracker
         {
             var records = db.GetAllRecords(habit.HabitId);
 
-            List<RecordModel> sortedRecords = records.OrderBy(o => o.Date).ToList();
+                List<RecordModel> sortedRecords = records.OrderBy(o => o.Date).ToList();
 
             return sortedRecords;
         }
         internal static void PrintRecordsList(List<RecordModel> sortedRecords, HabitModel habit)
         {
-            //var sortedRecords = GetSortedRecordsList(db, habit);
-
             Console.WriteLine($"Records List for {habit.HabitName}");
             Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine();
@@ -134,6 +136,7 @@ namespace HabitTracker
                         CreateHabit(db);
                         break;
                     case "4":
+                        DeleteHabit(db);
                         break;
                     case "5":
                         Console.WriteLine();
@@ -148,6 +151,58 @@ namespace HabitTracker
                 }
 
             }
+        }
+
+        private static void DeleteHabit(SqliteDataAccess db)
+        {
+            PrintHabitsList(db, false);
+
+            var habit = SelectHabitFromList(db, "delete");
+
+            var recordCount = GetSortedRecordsList(db, habit).Count();
+
+            Console.WriteLine();
+            Console.WriteLine($"WARNING: Deleting {habit.HabitName} will also delete the {recordCount} records associated with it. This cannot be undone.");
+            Console.WriteLine();
+
+            var habitDeleted = ConfirmHabitDelete(db, habit);
+
+            var message = (habitDeleted) ? $"Habit {habit.HabitName} was successfully deleted!" : $"User cancelled the deletion of habit {habit.HabitName}.";
+
+            Console.WriteLine(message);
+            Console.WriteLine();
+
+            PressAnyKeyToContinue();
+        }
+
+        private static bool ConfirmHabitDelete(SqliteDataAccess db, HabitModel habit)
+        {
+            bool habitDeleted = false;
+            bool responseValid = false;
+
+            while (responseValid == false)
+            {
+                string response = GetUserInput("Confirm delete: Press \"Y\" for yes or \"N\" for no: ");
+
+                if (response.ToLower() == "y")
+                {
+                    db.DeleteAllRecordsForAHabit(habit.HabitId);
+                    db.DeleteHabit(habit.HabitId);
+                    responseValid = true;
+                    habitDeleted = true;
+                }
+                else if (response.ToLower() == "n")
+                {
+                    responseValid = true;
+                }
+                else
+                {
+                    Console.Write("INVALID RESPONSE! ");
+                    responseValid = false;
+                }
+            }
+
+            return habitDeleted;
         }
 
         private static HabitModel SelectHabitFromList(SqliteDataAccess db, string action)

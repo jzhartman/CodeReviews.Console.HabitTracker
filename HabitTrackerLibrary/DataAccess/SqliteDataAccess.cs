@@ -158,6 +158,11 @@ namespace HabitTrackerLibrary
             Execute($"delete from {tableName} where id = '{recordId}'");
         }
 
+        public void DeleteAllRecordsForAHabit(int habitId)
+        {
+            Execute($"delete from records where habitId = '{habitId}'");
+        }
+
         public void InsertHabit(string name, string unitName)
         {
             Execute($"insert into habits (Name, UnitsId) values('{name}', (select id from units where units.Name ='{unitName}'))");
