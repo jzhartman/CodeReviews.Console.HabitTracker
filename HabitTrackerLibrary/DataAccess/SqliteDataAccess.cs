@@ -33,9 +33,6 @@ namespace HabitTrackerLibrary
          *  
          */
 
-
-        // DB created when app runs -- base seed data on empty tables
-
         public void InitializeTables()
         {
             InitializeUnitsTable();
@@ -67,12 +64,12 @@ namespace HabitTrackerLibrary
             {
                 Execute(
                     @"  INSERT INTO Units (Name)
-                        SELECT 'Unit', 'Units' UNION ALL
-                        SELECT 'Glass', 'Glasses' UNION ALL
-                        SELECT 'Book', 'Books' UNION ALL
-                        SELECT 'kCal', 'kCal' UNION ALL
-                        SELECT 'Time', 'Times' UNION ALL
-                        SELECT 'Rep', 'Reps'
+                        SELECT 'Units' UNION ALL
+                        SELECT 'Glasses' UNION ALL
+                        SELECT 'Pages' UNION ALL
+                        SELECT 'kCal' UNION ALL
+                        SELECT 'Times' UNION ALL
+                        SELECT 'Reps'
                     ");
             }
         }
@@ -97,7 +94,7 @@ namespace HabitTrackerLibrary
             if (RecordExists("Habits") == false)
             {
                 Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glasses"));
-                Execute(GenerateHabitsSeedDataSql("Reading Books", "Books"));
+                Execute(GenerateHabitsSeedDataSql("Reading", "Pages"));
             }
         }
 
@@ -124,28 +121,38 @@ namespace HabitTrackerLibrary
                         FOREIGN KEY (HabitId) REFERENCES Habits(Id)
                     )
                 ");
+
+            SeedRecordsTableData();
         }
 
-        public void GenerateRecordsSeedData()
+        public void SeedRecordsTableData()
         {
-            int iterations = 10;
-            DateTime date = DateTime.Now.AddDays(-iterations);
-            Random rnd = new Random();
-
-            SeedHabitsTableData();
-
-            for (int i = 0; i < iterations; i++)
+            if (RecordExists("Records") == false)
             {
-                //InsertRecord("Habits", "Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
-                //InsertRecord("Habits", "Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 5));
+                int iterations = 100;
+                DateTime date = DateTime.Now.AddDays(-iterations);
+                Random rnd = new Random();
 
-                date.AddDays(1);
+                SeedHabitsTableData();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    InsertRecordByHabitName("Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
+                    InsertRecordByHabitName("Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 100));
+
+                    date = date.AddDays(1);
+                } 
             }
         }
 
-        public void InsertRecord(string tableName, int habitId, string date, int quantity)
+        public void InsertRecordByHabitName(string habitName, string date, int quantity)
         {
-            Execute($"insert into {tableName}(HabitId, Date, Quantity) values({habitId}, '{date}', '{quantity}')");
+            Execute($"insert into records(HabitId, Date, Quantity) values( (select Id from habits where habits.Name = '{habitName}'), '{date}', '{quantity}')");
+        }
+
+        public void InsertRecord(int habitId, string date, int quantity)
+        {
+            Execute($"insert into records(HabitId, Date, Quantity) values({habitId}, '{date}', '{quantity}')");
         }
 
         public void UpdateRecord(string tableName, int recordId, string date, int quantity)

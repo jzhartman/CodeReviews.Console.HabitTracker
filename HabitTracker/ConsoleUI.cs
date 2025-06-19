@@ -13,7 +13,7 @@ namespace HabitTracker
     /*
      *  ReadMe file
      *  Parameterized queries
-     *  More seed data!!!!
+
      *  Add report functionality
      *  
      * 
@@ -445,7 +445,7 @@ namespace HabitTracker
             Console.WriteLine();
             Console.WriteLine($"Adding record of {quantity} {habit.UnitName} of {habit.HabitName} on {date.ToString("yyyy-MM-dd")}!");
 
-            db.InsertRecord("Records", habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
+            db.InsertRecord(habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
         }
 
         private static void CreateHabit(SqliteDataAccess db)
