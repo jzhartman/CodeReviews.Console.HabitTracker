@@ -13,16 +13,12 @@ namespace HabitTracker
     /*
      *  ReadMe file
      *  Parameterized queries
-
      *  Add report functionality
      *  
      * 
      *  TODO: Allow user to escape entries during input operations
+     *  TODO: Allow user to update habit (change name, or change unit)
      *  
-     *  Completed the Add New Habit
-     *  
-     *  Next Up: Deleting a habit???
-     *  Next Nect?? Updating a habit????
      */
 
     internal static class ConsoleUI

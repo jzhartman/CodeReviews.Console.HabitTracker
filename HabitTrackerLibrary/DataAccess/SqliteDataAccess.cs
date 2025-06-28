@@ -14,7 +14,7 @@ namespace HabitTrackerLibrary
             this.connectionStringName = connectionString;
         }
 
-        private void Execute(string sql)
+        internal void Execute(string sql)
         {
             using (var connection = new SqliteConnection(connectionStringName))
             {
@@ -28,122 +28,118 @@ namespace HabitTrackerLibrary
             }
         }
 
-        /*  
-         *  INTITIALIZE ALL TABLES
-         *  
-         */
+     
+        //public void InitializeTables()
+        //{
+        //    InitializeUnitsTable();
+        //    InitializeHabitsTable();
+        //    InitializeRecordsTable();
 
-        public void InitializeTables()
-        {
-            InitializeUnitsTable();
-            InitializeHabitsTable();
-            InitializeRecordsTable();
+        //    if (RecordExists("Records") == false)
+        //    {
+        //        //Execute(DBInitializationData.InitDataRecords);
+        //    }
+        //}
 
-            if (RecordExists("Records") == false)
-            {
-                //Execute(DBInitializationData.InitDataRecords);
-            }
-        }
+        //public void InitializeUnitsTable()
+        //{
+        //    Execute(
+        //        @"  CREATE TABLE IF NOT EXISTS Units
+        //            (
+        //                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        //                Name TEXT
+        //            );
+        //        ");
 
-        public void InitializeUnitsTable()
-        {
-            Execute(
-                @"  CREATE TABLE IF NOT EXISTS Units
-                    (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT
-                    );
-                ");
+        //    SeedUnitsTableData();
+        //}
 
-            SeedUnitsTableData();
-        }
+        //public void SeedUnitsTableData()
+        //{
+        //    if (RecordExists("Units") == false)
+        //    {
+        //        Execute(
+        //            @"  INSERT INTO Units (Name)
+        //                SELECT 'Units' UNION ALL
+        //                SELECT 'Glasses' UNION ALL
+        //                SELECT 'Pages' UNION ALL
+        //                SELECT 'kCal' UNION ALL
+        //                SELECT 'Times' UNION ALL
+        //                SELECT 'Reps'
+        //            ");
+        //    }
+        //}
 
-        public void SeedUnitsTableData()
-        {
-            if (RecordExists("Units") == false)
-            {
-                Execute(
-                    @"  INSERT INTO Units (Name)
-                        SELECT 'Units' UNION ALL
-                        SELECT 'Glasses' UNION ALL
-                        SELECT 'Pages' UNION ALL
-                        SELECT 'kCal' UNION ALL
-                        SELECT 'Times' UNION ALL
-                        SELECT 'Reps'
-                    ");
-            }
-        }
+        //public void InitializeHabitsTable()
+        //{
+        //    Execute(
+        //        @" CREATE TABLE IF NOT EXISTS Habits
+        //            (
+        //                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        //                Name TEXT,
+        //                UnitsId INTEGER,
+        //                FOREIGN KEY (UnitsId) REFERENCES Units(Id)
+        //            )
+        //        ");
 
-        public void InitializeHabitsTable()
-        {
-            Execute(
-                @" CREATE TABLE IF NOT EXISTS Habits
-                    (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT,
-                        UnitsId INTEGER,
-                        FOREIGN KEY (UnitsId) REFERENCES Units(Id)
-                    )
-                ");
+        //    SeedHabitsTableData();
+        //}
 
-            SeedHabitsTableData();
-        }
+        //public void SeedHabitsTableData()
+        //{
+        //    if (RecordExists("Habits") == false)
+        //    {
+        //        Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glasses"));
+        //        Execute(GenerateHabitsSeedDataSql("Reading", "Pages"));
+        //    }
+        //}
 
-        public void SeedHabitsTableData()
-        {
-            if (RecordExists("Habits") == false)
-            {
-                Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glasses"));
-                Execute(GenerateHabitsSeedDataSql("Reading", "Pages"));
-            }
-        }
+        //public string GenerateHabitsSeedDataSql(string habitName, string unitName)
+        //{
+        //    return @$"  INSERT INTO Units (Name)
+        //                SELECT '{unitName}'
+        //                WHERE NOT EXISTS (SELECT 1 FROM Units WHERE Name = '{unitName}');
 
-        public string GenerateHabitsSeedDataSql(string habitName, string unitName)
-        {
-            return @$"  INSERT INTO Units (Name)
-                        SELECT '{unitName}'
-                        WHERE NOT EXISTS (SELECT 1 FROM Units WHERE Name = '{unitName}');
+        //                INSERT INTO Habits (Name, UnitsId)
+        //                SELECT '{habitName}', (select Id from Units where Name = '{unitName}')
+        //                WHERE NOT EXISTS (SELECT 1 FROM Habits WHERE Name = '{habitName}');";
+        //}
 
-                        INSERT INTO Habits (Name, UnitsId)
-                        SELECT '{habitName}', (select Id from Units where Name = '{unitName}')
-                        WHERE NOT EXISTS (SELECT 1 FROM Habits WHERE Name = '{habitName}');";
-        }
+        //public void InitializeRecordsTable()
+        //{
+        //    Execute(
+        //        @" CREATE TABLE IF NOT EXISTS Records
+        //            (
+        //                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+        //                HabitId INTEGER,
+        //                Date TEXT,
+        //                Quantity INTEGER,
+        //                FOREIGN KEY (HabitId) REFERENCES Habits(Id)
+        //            )
+        //        ");
 
-        public void InitializeRecordsTable()
-        {
-            Execute(
-                @" CREATE TABLE IF NOT EXISTS Records
-                    (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        HabitId INTEGER,
-                        Date TEXT,
-                        Quantity INTEGER,
-                        FOREIGN KEY (HabitId) REFERENCES Habits(Id)
-                    )
-                ");
+        //    SeedRecordsTableData();
+        //}
 
-            SeedRecordsTableData();
-        }
+        //public void SeedRecordsTableData()
+        //{
+        //    if (RecordExists("Records") == false)
+        //    {
+        //        int iterations = 100;
+        //        DateTime date = DateTime.Now.AddDays(-iterations);
+        //        Random rnd = new Random();
 
-        public void SeedRecordsTableData()
-        {
-            if (RecordExists("Records") == false)
-            {
-                int iterations = 100;
-                DateTime date = DateTime.Now.AddDays(-iterations);
-                Random rnd = new Random();
+        //        SeedHabitsTableData();
 
-                SeedHabitsTableData();
+        //        for (int i = 0; i < iterations; i++)
+        //        {
+        //            InsertRecordByHabitName("Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
+        //            InsertRecordByHabitName("Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 100));
 
-                for (int i = 0; i < iterations; i++)
-                {
-                    InsertRecordByHabitName("Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
-                    InsertRecordByHabitName("Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 100));
-
-                    date = date.AddDays(1);
-                } 
-            }
-        }
+        //            date = date.AddDays(1);
+        //        } 
+        //    }
+        //}
 
         public void InsertRecordByHabitName(string habitName, string date, int quantity)
         {
@@ -356,61 +352,3 @@ namespace HabitTrackerLibrary
         }
     }
 }
-
-
-// Insert and delete can be same function -- just return the value from the tableCmd.ExecuteNonQuery() method
-
-
-// To get list of table names, create a table called Habits 
-
-
-/*
- * Overall Flow:
- *      User opens app
- *          Create the following:
- *              Create database if none exists
- *              Create a Habits table if none exists
- *                  Populate Habits table with name of any other existing tables
- *              Create tables for a couple of habits if none exists
- *              Add seed data for tables
- *      
- *      User Interaction
- *          Displays list of habits
- *          User chooses a habit
- *          Options:
- *              View All
- *                  Displays all records for that habit
- *                  Options: Update, Delete, Back
- *                      Update
- *                          Prompt record Id #
- *                          Check if record Id exists
- *                          Prompt new date
- *                          Prompt new quantity
- *                      Delete
- *                          Prompt record Id #
- *              Add
- *                  Allows user to add a record for that habit
- *              Delete All Records
- *                  Clears habit records but keeps table
- *              Delete Habit
- *                  Clears habit records
- *                  Deletes table
- *                  Removes table title from Habits table 
- * 
- * 
- */
-
-
-/*
- *  Habit Table
- *      Id
- *      HabitName
- *      TableName
- *          Derived from HabitName
- *          HabitName.ToLower()
- *          Get Index of all Spaces
- *          For all spaces greater than 1, set next indexed character to upper
- *          Remove all spaces
- *          GOOD PRACTICE FOR BUILDING A UNIT TEST!!!!
- *  
- */

@@ -6,79 +6,115 @@ using System.Threading.Tasks;
 
 namespace HabitTrackerLibrary.DataAccess
 {
-    /*
-     * All this code is obsolete and unused...
-     * 
-     * 
-     * 
-     * 
-     *  Reminder:
-     *      1. Should create DB and tables if not exist
-     *      2. Should populate empty tables with seed data
-     *      3. Should not populate tables that already have data
-     * 
-     *  Current State -- Can get it to create the tables and seed Units table with data if empty
-     *                   Needs a way to seed data to habits table that links to units table
-     *                  
-     */
-
-
-    static public class DBInitializationData
+    public static class DBInitializationData
     {
+        public static void InitializeTables(SqliteDataAccess db)
+        {
+            InitializeUnitsTable(db);
+            SeedUnitsTableData(db);
 
-        public static string SqlInitHabitsTable =
-        @" CREATE TABLE IF NOT EXISTS Habits
-            (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT,
-                UnitsId INTEGER,
-                FOREIGN KEY (UnitsId) REFERENCES Units(Id)
-            )
-        ";
+            InitializeHabitsTable(db);
+            SeedHabitsTableData(db);
 
-        public static string SqlInitRecordsTable =
-        @" CREATE TABLE IF NOT EXISTS Records
-            (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                HabitId INTEGER,
-                Date TEXT,
-                Quantity INTEGER,
-                FOREIGN KEY (HabitId) REFERENCES Habits(Id)
-            )
-        ";
+            InitializeRecordsTable(db);
+            SeedRecordsTableData(db);
+        }
 
-        public static string InitiDataHabits =
-        @"  INSERT INTO Units (NameSingle, NamePlural)
-            SELECT 'Glass', 'Glasses'
-            WHERE NOT EXISTS (SELECT 1 FROM Units WHERE NameSingle = 'Glass');
+        private static void InitializeUnitsTable(SqliteDataAccess db)
+        {
+            db.Execute(
+                @"  CREATE TABLE IF NOT EXISTS Units
+                    (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Name TEXT
+                    );
+                ");
+        }
 
-            INSERT INTO Habits (Name, UnitsId)
-            SELECT 'Drinking Water', (select Id from Units where NameSingle = 'Glass')
-            
-        ";
+        private static void SeedUnitsTableData(SqliteDataAccess db)
+        {
+            if (db.RecordExists("Units") == false)
+            {
+                db.Execute(
+                    @"  INSERT INTO Units (Name)
+                        SELECT 'Units' UNION ALL
+                        SELECT 'Glasses' UNION ALL
+                        SELECT 'Pages' UNION ALL
+                        SELECT 'kCal' UNION ALL
+                        SELECT 'Times' UNION ALL
+                        SELECT 'Reps'
+                    ");
+            }
+        }
 
+        private static void InitializeHabitsTable(SqliteDataAccess db)
+        {
+            db.Execute(
+                @" CREATE TABLE IF NOT EXISTS Habits
+                    (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Name TEXT,
+                        UnitsId INTEGER,
+                        FOREIGN KEY (UnitsId) REFERENCES Units(Id)
+                    )
+                ");
+        }
 
-        // THESE NEED SOME HEAVY WORK!!!!
+        private static void SeedHabitsTableData(SqliteDataAccess db)
+        {
+            if (db.RecordExists("Habits") == false)
+            {
+                db.Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glasses"));
+                db.Execute(GenerateHabitsSeedDataSql("Reading", "Pages"));
+            }
+        }
 
-        // Need to insert into the correct table, but requires the existence of the ocrrent units or habit
-        // Maybe separate this...
-        //      - Does table exist?
-        //              - Yes: Continue
-        //              - No: Create Table
-        //                      - Add data
+        private static string GenerateHabitsSeedDataSql(string habitName, string unitName)
+        {
+            return @$"  INSERT INTO Units (Name)
+                        SELECT '{unitName}'
+                        WHERE NOT EXISTS (SELECT 1 FROM Units WHERE Name = '{unitName}');
 
+                        INSERT INTO Habits (Name, UnitsId)
+                        SELECT '{habitName}', (select Id from Units where Name = '{unitName}')
+                        WHERE NOT EXISTS (SELECT 1 FROM Habits WHERE Name = '{habitName}');";
+        }
 
-        // Starter habits: Drinking Water, Reading Books, 
-        public static string InitDataHabits =
-            @"  INSERT INTO Habits (Name, UnitsId)
-                SELECT 'Unit', 'Units' UNION ALL
-                SELECT 'Rep', 'Reps'
-            ";
+        private static void InitializeRecordsTable(SqliteDataAccess db)
+        {
+            db.Execute(
+                @" CREATE TABLE IF NOT EXISTS Records
+                    (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        HabitId INTEGER,
+                        Date TEXT,
+                        Quantity INTEGER,
+                        FOREIGN KEY (HabitId) REFERENCES Habits(Id)
+                    )
+                ");
+        }
 
-        public static string InitDataRecords =
-            @"  INSERT INTO Units (HabitId, Date, Quantity)
-                SELECT 'Unit', 'Units' UNION ALL
-                SELECT 'Rep', 'Reps'
-            ";
+        private static void SeedRecordsTableData(SqliteDataAccess db)
+        {
+            if (db.RecordExists("Records") == false)
+            {
+                int iterations = 100;
+                DateTime date = DateTime.Now.AddDays(-iterations);
+                Random rnd = new Random();
+
+                SeedHabitsTableData(db);
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    db.InsertRecordByHabitName("Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
+                    db.InsertRecordByHabitName("Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 100));
+
+                    date = date.AddDays(1);
+                }
+            }
+        }
+
     }
+
+
 }
