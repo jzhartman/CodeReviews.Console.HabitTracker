@@ -1,13 +1,6 @@
-﻿using HabitTrackerLibrary;
-using HabitTrackerLibrary.DataAccess;
+﻿using HabitTrackerLibrary.DataAccess;
 using HabitTrackerLibrary.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitTracker
 {
@@ -25,6 +18,34 @@ namespace HabitTracker
     public class ConsoleUI
     {
         private readonly SqlData sqlData;
+
+        private Menu mainMenu = new Menu
+            (
+                "Main Menu",
+                "Select an option below by entering the menu item number:",
+                new List<string>()
+                {
+                    "Track Habit",
+                    "View Habit",
+                    "Add New Habit",
+                    "Delete Habit",
+                    "Exit Application"
+                }
+
+            );
+
+        private Menu viewHabitMenu = new Menu
+            (
+                "View Habit",
+                "Select an option below by entering the menu item number:",
+                new List<string>()
+                {
+                    "Add Record",
+                    "Delete Record",
+                    "Change Record",
+                    "Return to Main Menu"
+                }
+            );
 
         public ConsoleUI(SqlData sqlData)
         {
@@ -48,8 +69,7 @@ namespace HabitTracker
             }
 
             Console.WriteLine();
-            if (printMainMenu) PrintMainMenu();
-            Console.WriteLine("---------------------------------------------------------");
+            if (printMainMenu) mainMenu.PrintMenu();
             Console.WriteLine();
         }
 
@@ -105,19 +125,6 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal void PrintMainMenu()
-        {
-            Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine("Select an option below by entering the menu item number:");
-            Console.WriteLine();
-            Console.WriteLine("\t1: Track Habit");
-            Console.WriteLine("\t2: View Habit");
-            Console.WriteLine("\t3: Add New Habit");
-            Console.WriteLine("\t4: Delete Habit");
-            Console.WriteLine("\t5: Exit Application");
-            Console.WriteLine();  
-        }
-
         internal void MainMenu()
         {
             bool closeApp = false;
@@ -125,7 +132,7 @@ namespace HabitTracker
             while (closeApp == false)
             {
                 PrintHabitsList(true);
-                int userSelection = GetNumberInput("Enter menu selection: ", 1, 5);
+                int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 5);
                 string commandInput = userSelection.ToString();
 
                 switch (commandInput)
@@ -176,7 +183,7 @@ namespace HabitTracker
             Console.WriteLine(message);
             Console.WriteLine();
 
-            PressAnyKeyToContinue();
+            UserInput.PressAnyKeyToContinue();
         }
 
         private bool ConfirmHabitDelete(HabitModel habit)
@@ -186,7 +193,7 @@ namespace HabitTracker
 
             while (responseValid == false)
             {
-                string response = GetUserInput("Confirm delete: Press \"Y\" for yes or \"N\" for no: ");
+                string response = UserInput.GetUserInput("Confirm delete: Press \"Y\" for yes or \"N\" for no: ");
 
                 if (response.ToLower() == "y")
                 {
@@ -213,7 +220,7 @@ namespace HabitTracker
         {
             var habitList = sqlData.GetAllHabits();
 
-            int userSelection = GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
+            int userSelection = UserInput.GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
             var habit = habitList[userSelection - 1];
 
             return habit;
@@ -242,29 +249,16 @@ namespace HabitTracker
             }
         }
 
-        private void ViewHabitRecords_PrintSubMenu()
-        {
-            Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine("Select an option below by entering the menu item number:");
-            Console.WriteLine();
-            Console.WriteLine("\t1: Add Record");
-            Console.WriteLine("\t2: Delete Record");
-            Console.WriteLine("\t3: Change Record");
-            Console.WriteLine("\t4: Return to Main Menu");
-            Console.WriteLine();
-            Console.WriteLine("---------------------------------------------------------");
-        }
-
         private bool ViewHabitRecords_HandleUserSelection(HabitModel habit, List<RecordModel> sortedRecords)
         {
             bool returnToMainMenu = false;
             bool validInput = false;
 
-            ViewHabitRecords_PrintSubMenu();
+            viewHabitMenu.PrintMenu();
             
             while (validInput == false)
             {
-                int userSelection = GetNumberInput("Enter menu selection: ", 1, 5);
+                int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 5);
                 string commandInput = userSelection.ToString();
 
                 switch (commandInput)
@@ -292,7 +286,7 @@ namespace HabitTracker
                         Console.WriteLine("ERROR - Invalid selection detected");
                         break;
                 }
-                PressAnyKeyToContinue();
+                UserInput.PressAnyKeyToContinue();
             }
 
             return returnToMainMenu;
@@ -309,7 +303,7 @@ namespace HabitTracker
 
             while (responseValid == false)
             {
-                string response = GetUserInput("Confirm delete: Press \"Y\" for yes or \"N\" for no: ");
+                string response = UserInput.GetUserInput("Confirm delete: Press \"Y\" for yes or \"N\" for no: ");
 
                 if (response.ToLower() == "y")
                 {
@@ -332,7 +326,7 @@ namespace HabitTracker
 
         private RecordModel SelectRecordFromList(List<RecordModel> sortedRecords, string action, HabitModel habit)
         {
-            int userSelection = GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
+            int userSelection = UserInput.GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
             var record = sortedRecords[userSelection - 1];
 
             return record;
@@ -348,7 +342,7 @@ namespace HabitTracker
             Console.WriteLine($"Changing record for {record.Quantity} {habit.UnitName} of {habit.HabitName} on {record.Date.ToString("yyyy-MM-dd")}");
 
 
-            var newDate = GetDateInput($"Enter the new date (or press enter to keep original date): ", "original");
+            var newDate = UserInput.GetDateInput($"Enter the new date (or press enter to keep original date): ", "original");
 
             if (newDate == DateOnly.MinValue)
             {
@@ -360,7 +354,7 @@ namespace HabitTracker
                 confirmationCheck = $"Changed date from {record.Date.ToString("yyyy-MM-dd")} to {newDate.ToString("yyyy-MM-dd")}";
             }
 
-            var newQuantity = GetNumberInput($"Enter the new quantity for the record (or press enter to keep original quantity): ", 1, Int32.MaxValue, true);
+            var newQuantity = UserInput.GetNumberInput($"Enter the new quantity for the record (or press enter to keep original quantity): ", 1, Int32.MaxValue, true);
 
             if (newQuantity == Int32.MinValue)
             {
@@ -392,7 +386,7 @@ namespace HabitTracker
 
             while (responseValid == false)
             {
-                string response = GetUserInput("Confirm update: Press \"Y\" for yes or \"N\" for no: ");
+                string response = UserInput.GetUserInput("Confirm update: Press \"Y\" for yes or \"N\" for no: ");
 
                 if (response.ToLower() == "y")
                 {
@@ -424,16 +418,16 @@ namespace HabitTracker
 
             CreateRecord(habit);
 
-            PressAnyKeyToContinue();
+            UserInput.PressAnyKeyToContinue();
         }
 
         private (DateOnly date, int quantity) GetRecordData(HabitModel habit)
         {
-            var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
+            var date = UserInput.GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
 
             Debug.WriteLine($"Date Input: {date.ToString("yyyy-MM-dd")}");
 
-            var quantity = GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitName}): ", 1, Int32.MaxValue);
+            var quantity = UserInput.GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitName}): ", 1, Int32.MaxValue);
 
             return (date, quantity);
         }
@@ -462,7 +456,7 @@ namespace HabitTracker
 
             ConfirmNewHabitData(habitName, unitName);
 
-            PressAnyKeyToContinue();
+            UserInput.PressAnyKeyToContinue();
         }
 
         private void ConfirmNewHabitData(string habitName, string unitName)
@@ -474,7 +468,7 @@ namespace HabitTracker
 
             while (responseValid == false)
             {
-                string response = GetUserInput("To confirm enter \"Y\" for yes or \"N\" for no: ");
+                string response =   UserInput.GetUserInput("To confirm enter \"Y\" for yes or \"N\" for no: ");
                 Console.WriteLine();
 
                 if (response.ToLower() == "y")
@@ -505,7 +499,7 @@ namespace HabitTracker
             var unitName = string.Empty;
             var unitList = sqlData.GetAllUnits();
 
-            int userSelection = GetNumberInput($"Enter ID of the unit you wish to use: ", 1, unitList.Count() + 1);
+            int userSelection = UserInput.GetNumberInput($"Enter ID of the unit you wish to use: ", 1, unitList.Count() + 1);
 
             if (userSelection <= unitList.Count())
             {
@@ -564,7 +558,7 @@ namespace HabitTracker
 
             while (validName == false)
             {
-                name = GetUserInput($"Enter the name of the new {itemType}: ");
+                name = UserInput.GetUserInput($"Enter the name of the new {itemType}: ");
 
                 if (string.IsNullOrWhiteSpace(name))
                 {
@@ -577,90 +571,6 @@ namespace HabitTracker
             }
 
             return name;
-        }
-
-
-
-
-        internal string GetUserInput(string message)
-        {
-            Console.Write(message);
-            return Console.ReadLine();
-        }
-        internal int GetNumberInput(string message, int min, int max, bool allowBlanks = false)
-        {
-            string numberInput = string.Empty;
-            int output;
-            bool firstTime = true;
-            bool validNumber = false;
-
-            do
-            {
-                message = (firstTime) ? message : "ERROR: Please enter a valid number (GNI): ";
-                numberInput = GetUserInput(message);
-                Debug.WriteLine($"User entered: {numberInput}");
-                firstTime = false;
-
-                validNumber = Int32.TryParse(numberInput, out output);
-
-                validNumber = (output < min || output > max) ? false : true;
-
-                if (allowBlanks == true && numberInput == "")
-                {
-                    output = Int32.MinValue;
-                    validNumber = true;
-                }
-
-            } while (validNumber == false);
-
-            return output;
-        }
-        internal DateOnly GetDateInput(string message, string blankBehavior)
-        {
-            string dateInput;
-            DateOnly output;
-            bool firstTime = true;
-            bool validDate = false;
-
-            do
-            {
-                message = (firstTime) ? message : "ERROR: Please enter a valid date (yyyy-mm-dd): ";
-                dateInput = GetUserInput(message);
-                Debug.WriteLine($"User entered: {dateInput}");
-
-                if (dateInput == "")
-                {
-                    if (blankBehavior == "today")
-                    {
-                        output = DateOnly.FromDateTime(DateTime.Now);
-                        validDate = true; 
-                    }
-                    else if (blankBehavior == "original")
-                    {
-                        output = DateOnly.MinValue;
-                        validDate = true;
-                    }
-                    else
-                    {
-                        output = DateOnly.MinValue;
-                    }
-                }
-                else
-                {
-                    validDate = DateOnly.TryParseExact(dateInput, "yyyy-MM-dd", out output);
-                }
-
-                    firstTime = false;
-
-            } while (validDate == false);
-
-            return output;
-        }
-        internal void PressAnyKeyToContinue()
-        {
-            Console.WriteLine();
-            Console.Write("Press any key to continue...");
-            Console.ReadKey();
         }
     }
 }
