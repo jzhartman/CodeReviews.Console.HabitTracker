@@ -1,4 +1,5 @@
 ﻿using HabitTrackerLibrary;
+using HabitTrackerLibrary.DataAccess;
 using HabitTrackerLibrary.Models;
 using System;
 using System.Collections.Generic;
@@ -15,20 +16,27 @@ namespace HabitTracker
      *  Parameterized queries
      *  Add report functionality
      *  
-     * 
+     *  
      *  TODO: Allow user to escape entries during input operations
      *  TODO: Allow user to update habit (change name, or change unit)
      *  
      */
 
-    internal static class ConsoleUI
+    public class ConsoleUI
     {
-        internal static void PrintHabitsList(SqliteDataAccess db, bool printMainMenu)
+        private readonly SqlData sqlData;
+
+        public ConsoleUI(SqlData sqlData)
+        {
+           this.sqlData = sqlData;
+        }
+
+        internal void PrintHabitsList(bool printMainMenu)
         {
             Console.Clear();
             WelcomeMessage();
 
-            var habits = db.GetAllHabits();
+            var habits = sqlData.GetAllHabits();
 
             Console.WriteLine("Habits List");
             Console.WriteLine("---------------------------------------------------------");
@@ -45,9 +53,9 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal static void PrintUnitsList(SqliteDataAccess db, string habitName)
+        internal void PrintUnitsList(string habitName)
         {
-            var units = db.GetAllUnits();
+            var units = sqlData.GetAllUnits();
 
             Console.WriteLine();
             Console.WriteLine("---------------------------------------------------------");
@@ -67,15 +75,15 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal static List<RecordModel> GetSortedRecordsList(SqliteDataAccess db, HabitModel habit)
+        internal List<RecordModel> GetSortedRecordsList(HabitModel habit)
         {
-            var records = db.GetAllRecords(habit.HabitId);
+            var records = sqlData.GetAllRecords(habit.HabitId);
 
                 List<RecordModel> sortedRecords = records.OrderBy(o => o.Date).ToList();
 
             return sortedRecords;
         }
-        internal static void PrintRecordsList(List<RecordModel> sortedRecords, HabitModel habit)
+        internal void PrintRecordsList(List<RecordModel> sortedRecords, HabitModel habit)
         {
             Console.WriteLine($"Records List for {habit.HabitName}");
             Console.WriteLine("---------------------------------------------------------");
@@ -89,7 +97,7 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal static void WelcomeMessage()
+        internal void WelcomeMessage()
         {
             Console.WriteLine("Habit Tracker Application: Version 0.1 BETA");
             Console.WriteLine("---------------------------------------------------------");
@@ -97,7 +105,7 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal static void PrintMainMenu()
+        internal void PrintMainMenu()
         {
             Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine("Select an option below by entering the menu item number:");
@@ -110,29 +118,29 @@ namespace HabitTracker
             Console.WriteLine();  
         }
 
-        internal static void MainMenu(SqliteDataAccess db)
+        internal void MainMenu()
         {
             bool closeApp = false;
 
             while (closeApp == false)
             {
-                PrintHabitsList(db, true);
+                PrintHabitsList(true);
                 int userSelection = GetNumberInput("Enter menu selection: ", 1, 5);
                 string commandInput = userSelection.ToString();
 
                 switch (commandInput)
                 {
                     case "1":
-                        TrackHabit(db);
+                        TrackHabit();
                         break;
                     case "2":
-                        ViewHabitRecords(db);
+                        ViewHabitRecords();
                         break;
                     case "3":
-                        CreateHabit(db);
+                        CreateHabit();
                         break;
                     case "4":
-                        DeleteHabit(db);
+                        DeleteHabit();
                         break;
                     case "5":
                         Console.WriteLine();
@@ -149,19 +157,19 @@ namespace HabitTracker
             }
         }
 
-        private static void DeleteHabit(SqliteDataAccess db)
+        private void DeleteHabit()
         {
-            PrintHabitsList(db, false);
+            PrintHabitsList(false);
 
-            var habit = SelectHabitFromList(db, "delete");
+            var habit = SelectHabitFromList("delete");
 
-            var recordCount = GetSortedRecordsList(db, habit).Count();
+            var recordCount = GetSortedRecordsList(habit).Count();
 
             Console.WriteLine();
             Console.WriteLine($"WARNING: Deleting {habit.HabitName} will also delete the {recordCount} records associated with it. This cannot be undone.");
             Console.WriteLine();
 
-            var habitDeleted = ConfirmHabitDelete(db, habit);
+            var habitDeleted = ConfirmHabitDelete(habit);
 
             var message = (habitDeleted) ? $"Habit {habit.HabitName} was successfully deleted!" : $"User cancelled the deletion of habit {habit.HabitName}.";
 
@@ -171,7 +179,7 @@ namespace HabitTracker
             PressAnyKeyToContinue();
         }
 
-        private static bool ConfirmHabitDelete(SqliteDataAccess db, HabitModel habit)
+        private bool ConfirmHabitDelete(HabitModel habit)
         {
             bool habitDeleted = false;
             bool responseValid = false;
@@ -182,8 +190,8 @@ namespace HabitTracker
 
                 if (response.ToLower() == "y")
                 {
-                    db.DeleteAllRecordsForAHabit(habit.HabitId);
-                    db.DeleteHabit(habit.HabitId);
+                    sqlData.DeleteAllRecordsForAHabit(habit.HabitId);
+                    sqlData.DeleteHabit(habit.HabitId);
                     responseValid = true;
                     habitDeleted = true;
                 }
@@ -201,9 +209,9 @@ namespace HabitTracker
             return habitDeleted;
         }
 
-        private static HabitModel SelectHabitFromList(SqliteDataAccess db, string action)
+        private HabitModel SelectHabitFromList(string action)
         {
-            var habitList = db.GetAllHabits();
+            var habitList = sqlData.GetAllHabits();
 
             int userSelection = GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
             var habit = habitList[userSelection - 1];
@@ -211,30 +219,30 @@ namespace HabitTracker
             return habit;
         }
 
-        private static void ViewHabitRecords(SqliteDataAccess db)
+        private void ViewHabitRecords()
         {
-            PrintHabitsList(db, false);
-            var habit = SelectHabitFromList(db, "view");
-            ViewHabitRecords_PrintRecordsList(db, habit);
+            PrintHabitsList(false);
+            var habit = SelectHabitFromList("view");
+            ViewHabitRecords_PrintRecordsList(habit);
         }
 
-        private static void ViewHabitRecords_PrintRecordsList(SqliteDataAccess db, HabitModel habit)
+        private void ViewHabitRecords_PrintRecordsList(HabitModel habit)
         {
             bool returnToMainMenu = false;
 
             while (returnToMainMenu == false)
             {
-                var sortedRecords = GetSortedRecordsList(db, habit);
+                var sortedRecords = GetSortedRecordsList(habit);
 
                 Console.Clear();
                 WelcomeMessage();
                 PrintRecordsList(sortedRecords, habit);
 
-                returnToMainMenu = ViewHabitRecords_HandleUserSelection(db, habit, sortedRecords);
+                returnToMainMenu = ViewHabitRecords_HandleUserSelection(habit, sortedRecords);
             }
         }
 
-        private static void ViewHabitRecords_PrintSubMenu()
+        private void ViewHabitRecords_PrintSubMenu()
         {
             Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine("Select an option below by entering the menu item number:");
@@ -247,7 +255,7 @@ namespace HabitTracker
             Console.WriteLine("---------------------------------------------------------");
         }
 
-        private static bool ViewHabitRecords_HandleUserSelection(SqliteDataAccess db, HabitModel habit, List<RecordModel> sortedRecords)
+        private bool ViewHabitRecords_HandleUserSelection(HabitModel habit, List<RecordModel> sortedRecords)
         {
             bool returnToMainMenu = false;
             bool validInput = false;
@@ -262,15 +270,15 @@ namespace HabitTracker
                 switch (commandInput)
                 {
                     case "1":
-                        CreateRecord(db, habit);
+                        CreateRecord(habit);
                         validInput = true;
                         break;
                     case "2":
-                        DeleteHabitRecord(db, sortedRecords, habit);
+                        DeleteHabitRecord(sortedRecords, habit);
                         validInput = true;
                         break;
                     case "3":
-                        UpdateHabitRecord(db, sortedRecords, habit);
+                        UpdateHabitRecord(sortedRecords, habit);
                         validInput = true;
                         break;
                     case "4":
@@ -290,7 +298,7 @@ namespace HabitTracker
             return returnToMainMenu;
         }
 
-        private static void DeleteHabitRecord(SqliteDataAccess db, List<RecordModel> sortedRecords, HabitModel habit)
+        private void DeleteHabitRecord(List<RecordModel> sortedRecords, HabitModel habit)
         {
             var record = SelectRecordFromList(sortedRecords, "delete", habit);
             Console.WriteLine();
@@ -306,7 +314,7 @@ namespace HabitTracker
                 if (response.ToLower() == "y")
                 {
                     Console.WriteLine("Record successfuly deleted!");
-                    db.DeleteRecord("Records", record.Id);
+                    sqlData.DeleteRecord("Records", record.Id);
                     responseValid = true;
                 }
                 else if (response.ToLower() == "n")
@@ -322,7 +330,7 @@ namespace HabitTracker
             }
         }
 
-        private static RecordModel SelectRecordFromList(List<RecordModel> sortedRecords, string action, HabitModel habit)
+        private RecordModel SelectRecordFromList(List<RecordModel> sortedRecords, string action, HabitModel habit)
         {
             int userSelection = GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
             var record = sortedRecords[userSelection - 1];
@@ -330,7 +338,7 @@ namespace HabitTracker
             return record;
         }
 
-        private static void UpdateHabitRecord(SqliteDataAccess db, List<RecordModel> sortedRecords, HabitModel habit)
+        private void UpdateHabitRecord(List<RecordModel> sortedRecords, HabitModel habit)
         {
             string confirmationCheck = string.Empty; ;
             bool dateChanged = true;
@@ -389,7 +397,7 @@ namespace HabitTracker
                 if (response.ToLower() == "y")
                 {
                     Console.WriteLine("Record successfuly updated!");
-                    db.UpdateRecord("Records", record.Id, newDate.ToString("yyyy-MM-dd"), newQuantity);
+                    sqlData.UpdateRecord("Records", record.Id, newDate.ToString("yyyy-MM-dd"), newQuantity);
                     responseValid = true;
                 }
                 else if (response.ToLower() == "n")
@@ -405,21 +413,21 @@ namespace HabitTracker
             }
         }
 
-        private static void TrackHabit(SqliteDataAccess db)
+        private void TrackHabit()
         {
-            PrintHabitsList(db, false);
+            PrintHabitsList(false);
 
-            var habit = SelectHabitFromList(db, "track");
+            var habit = SelectHabitFromList("track");
 
             Console.Clear();
             WelcomeMessage();
 
-            CreateRecord(db, habit);
+            CreateRecord(habit);
 
             PressAnyKeyToContinue();
         }
 
-        private static (DateOnly date, int quantity) GetRecordData(HabitModel habit)
+        private (DateOnly date, int quantity) GetRecordData(HabitModel habit)
         {
             var date = GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
 
@@ -430,7 +438,7 @@ namespace HabitTracker
             return (date, quantity);
         }
 
-        private static void CreateRecord(SqliteDataAccess db, HabitModel habit)
+        private void CreateRecord(HabitModel habit)
         {
             Console.WriteLine($"Tracking record for {habit.HabitName}");
             Console.WriteLine("---------------------------------------------------------");
@@ -441,23 +449,23 @@ namespace HabitTracker
             Console.WriteLine();
             Console.WriteLine($"Adding record of {quantity} {habit.UnitName} of {habit.HabitName} on {date.ToString("yyyy-MM-dd")}!");
 
-            db.InsertRecord(habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
+            sqlData.InsertRecord(habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
         }
 
-        private static void CreateHabit(SqliteDataAccess db)
+        private void CreateHabit()
         {
-            PrintHabitsList(db, false);
+            PrintHabitsList(false);
 
-            var habitName = GetNewHabitName(db);
+            var habitName = GetNewHabitName();
 
-            var unitName = GetUnitForNewHabit(db, habitName);
+            var unitName = GetUnitForNewHabit(habitName);
 
-            ConfirmNewHabitData(db, habitName, unitName);
+            ConfirmNewHabitData(habitName, unitName);
 
             PressAnyKeyToContinue();
         }
 
-        private static void ConfirmNewHabitData(SqliteDataAccess db, string habitName, string unitName)
+        private void ConfirmNewHabitData(string habitName, string unitName)
         {
             Console.WriteLine();
             Console.WriteLine("---------------------------------------------------------");
@@ -472,8 +480,8 @@ namespace HabitTracker
                 if (response.ToLower() == "y")
                 {
                     Console.WriteLine("New habit successfuly added!");
-                    db.InsertUnit(unitName);
-                    db.InsertHabit(habitName, unitName);
+                    sqlData.InsertUnit(unitName);
+                    sqlData.InsertHabit(habitName, unitName);
                     responseValid = true;
                 }
                 else if (response.ToLower() == "n")
@@ -490,12 +498,12 @@ namespace HabitTracker
 
         }
 
-        private static string GetUnitForNewHabit(SqliteDataAccess db, string habitName)
+        private string GetUnitForNewHabit(string habitName)
         {
-            PrintUnitsList(db, habitName);
+            PrintUnitsList(habitName);
 
             var unitName = string.Empty;
-            var unitList = db.GetAllUnits();
+            var unitList = sqlData.GetAllUnits();
 
             int userSelection = GetNumberInput($"Enter ID of the unit you wish to use: ", 1, unitList.Count() + 1);
 
@@ -505,12 +513,12 @@ namespace HabitTracker
             }
             else if(userSelection == unitList.Count() + 1)
             {
-                unitName = GetNewUnitName(db);
+                unitName = GetNewUnitName();
             }
 
             return unitName;
         }
-        private static string GetNewUnitName(SqliteDataAccess db)
+        private string GetNewUnitName()
         {
             var unitName = string.Empty;
             var status = string.Empty;
@@ -518,8 +526,8 @@ namespace HabitTracker
 
             while (unitExists == true)
             {
-                unitName = GetNameFromUser(db, "unit");
-                unitExists = db.CheckIfUnitExists(unitName);
+                unitName = GetNameFromUser("unit");
+                unitExists = sqlData.CheckIfUnitExists(unitName);
 
                 if (unitExists == true)
                 {
@@ -530,7 +538,7 @@ namespace HabitTracker
             return unitName;
         }
 
-        private static string GetNewHabitName(SqliteDataAccess db)
+        private string GetNewHabitName()
         {
             var habitName = string.Empty;
             var status = string.Empty;
@@ -538,8 +546,8 @@ namespace HabitTracker
 
             while (habitExists == true)
             {
-                habitName = GetNameFromUser(db, "habit");
-                habitExists = db.CheckIfHabitExists(habitName);
+                habitName = GetNameFromUser("habit");
+                habitExists = sqlData.CheckIfHabitExists(habitName);
 
                 if (habitExists == true)
                 {
@@ -549,7 +557,7 @@ namespace HabitTracker
 
             return habitName;
         }
-        private static string GetNameFromUser(SqliteDataAccess db, string itemType)
+        private string GetNameFromUser(string itemType)
         {
             string name = string.Empty;
             bool validName = false;
@@ -574,12 +582,12 @@ namespace HabitTracker
 
 
 
-        internal static string GetUserInput(string message)
+        internal string GetUserInput(string message)
         {
             Console.Write(message);
             return Console.ReadLine();
         }
-        internal static int GetNumberInput(string message, int min, int max, bool allowBlanks = false)
+        internal int GetNumberInput(string message, int min, int max, bool allowBlanks = false)
         {
             string numberInput = string.Empty;
             int output;
@@ -607,7 +615,7 @@ namespace HabitTracker
 
             return output;
         }
-        internal static DateOnly GetDateInput(string message, string blankBehavior)
+        internal DateOnly GetDateInput(string message, string blankBehavior)
         {
             string dateInput;
             DateOnly output;
@@ -648,7 +656,7 @@ namespace HabitTracker
 
             return output;
         }
-        internal static void PressAnyKeyToContinue()
+        internal void PressAnyKeyToContinue()
         {
             Console.WriteLine();
             Console.Write("Press any key to continue...");

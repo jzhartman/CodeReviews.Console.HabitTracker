@@ -8,16 +8,16 @@ namespace HabitTrackerLibrary.DataAccess
 {
     public static class DBInitializationData
     {
-        public static void InitializeTables(SqliteDataAccess db)
+        public static void InitializeTables(SqliteDataAccess db, SqlData sqlData)
         {
             InitializeUnitsTable(db);
-            SeedUnitsTableData(db);
+            SeedUnitsTableData(db, sqlData);
 
             InitializeHabitsTable(db);
-            SeedHabitsTableData(db);
+            SeedHabitsTableData(db, sqlData);
 
             InitializeRecordsTable(db);
-            SeedRecordsTableData(db);
+            SeedRecordsTableData(db, sqlData);
         }
 
         private static void InitializeUnitsTable(SqliteDataAccess db)
@@ -31,9 +31,9 @@ namespace HabitTrackerLibrary.DataAccess
                 ");
         }
 
-        private static void SeedUnitsTableData(SqliteDataAccess db)
+        private static void SeedUnitsTableData(SqliteDataAccess db, SqlData sqlData)
         {
-            if (db.RecordExists("Units") == false)
+            if (sqlData.RecordExists("Units") == false)
             {
                 db.Execute(
                     @"  INSERT INTO Units (Name)
@@ -60,9 +60,9 @@ namespace HabitTrackerLibrary.DataAccess
                 ");
         }
 
-        private static void SeedHabitsTableData(SqliteDataAccess db)
+        private static void SeedHabitsTableData(SqliteDataAccess db, SqlData sqlData)
         {
-            if (db.RecordExists("Habits") == false)
+            if (sqlData.RecordExists("Habits") == false)
             {
                 db.Execute(GenerateHabitsSeedDataSql("Drinking Water", "Glasses"));
                 db.Execute(GenerateHabitsSeedDataSql("Reading", "Pages"));
@@ -94,20 +94,20 @@ namespace HabitTrackerLibrary.DataAccess
                 ");
         }
 
-        private static void SeedRecordsTableData(SqliteDataAccess db)
+        private static void SeedRecordsTableData(SqliteDataAccess db, SqlData sqlData)
         {
-            if (db.RecordExists("Records") == false)
+            if (sqlData.RecordExists("Records") == false)
             {
                 int iterations = 100;
                 DateTime date = DateTime.Now.AddDays(-iterations);
                 Random rnd = new Random();
 
-                SeedHabitsTableData(db);
+                SeedHabitsTableData(db, sqlData);
 
                 for (int i = 0; i < iterations; i++)
                 {
-                    db.InsertRecordByHabitName("Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
-                    db.InsertRecordByHabitName("Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 100));
+                    sqlData.InsertRecordByHabitName("Drinking Water", date.ToString("yyyy-MM-dd"), rnd.Next(1, 25));
+                    sqlData.InsertRecordByHabitName("Reading", date.ToString("yyyy-MM-dd"), rnd.Next(1, 100));
 
                     date = date.AddDays(1);
                 }
