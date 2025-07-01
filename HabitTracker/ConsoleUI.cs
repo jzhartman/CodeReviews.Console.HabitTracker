@@ -125,7 +125,9 @@ namespace HabitTracker
             Console.WriteLine();
         }
 
-        internal void MainMenu()
+
+
+        internal void AppFlowService()
         {
             bool closeApp = false;
 

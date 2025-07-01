@@ -18,7 +18,7 @@ namespace HabitTracker
 
             DBInitializationData.InitializeTables(db, sqlData);
 
-            consoleUI.MainMenu();
+            consoleUI.AppFlowService();
         }
     }
 }
