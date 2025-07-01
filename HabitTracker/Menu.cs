@@ -21,14 +21,15 @@ namespace HabitTracker
 
         public void PrintMenu()
         {
-            Console.WriteLine("---------------------------------------------------------");
+            //Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine(Message);
             Console.WriteLine();
 
             PrintOptions();
             Console.WriteLine();
+            Console.WriteLine();
 
-            Console.WriteLine("---------------------------------------------------------");
+            //Console.WriteLine("---------------------------------------------------------");
         }
 
         private void PrintOptions()

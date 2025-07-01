@@ -25,14 +25,13 @@ namespace HabitTracker
             {
                 message = (firstTime) ? message : "ERROR: Please enter a valid number (GNI): ";
                 numberInput = GetUserInput(message);
-                Debug.WriteLine($"User entered: {numberInput}");
                 firstTime = false;
 
                 validNumber = Int32.TryParse(numberInput, out output);
 
                 validNumber = (output < min || output > max) ? false : true;
 
-                if (allowBlanks == true && numberInput == "")
+                if (allowBlanks == true && numberInput.Trim() == "")
                 {
                     output = Int32.MinValue;
                     validNumber = true;
@@ -53,7 +52,6 @@ namespace HabitTracker
             {
                 message = (firstTime) ? message : "ERROR: Please enter a valid date (yyyy-mm-dd): ";
                 dateInput = GetUserInput(message);
-                Debug.WriteLine($"User entered: {dateInput}");
 
                 if (dateInput == "")
                 {
@@ -88,6 +86,33 @@ namespace HabitTracker
             Console.WriteLine();
             Console.Write("Press any key to continue...");
             Console.ReadKey();
+        }
+
+        internal static bool GetUserConfirmation(string action)
+        {
+            bool confirmationResult = false;
+            bool responseValid = true;
+
+            do
+            {
+                string response = UserInput.GetUserInput($"Confirm {action}: Press \"Y\" for yes or \"N\" for no: ");
+
+                if (response.ToLower() == "y")
+                {
+                    confirmationResult = true;
+                }
+                else if (response.ToLower() == "n")
+                {
+                    confirmationResult = false;
+                }
+                else
+                {
+                    Console.Write("INVALID RESPONSE!");
+                    responseValid = false;
+                }
+            } while (responseValid == false);
+
+            return confirmationResult;
         }
     }
 }
