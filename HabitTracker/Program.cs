@@ -14,11 +14,8 @@ namespace HabitTracker
         static void Main(string[] args)
         {
             var sqlData = new SqlData(db, connectionString);
-            var consoleUI = new ConsoleUI(sqlData);
-
             DBInitializationData.InitializeTables(db, sqlData);
-
-            consoleUI.MenuHandler_MainMenu();
+            var consoleUI = new ConsoleUI(sqlData);
         }
     }
 }

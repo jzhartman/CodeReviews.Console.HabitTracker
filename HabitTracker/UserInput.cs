@@ -100,10 +100,12 @@ namespace HabitTracker
                 if (response.ToLower() == "y")
                 {
                     confirmationResult = true;
+                    responseValid = true;
                 }
                 else if (response.ToLower() == "n")
                 {
                     confirmationResult = false;
+                    responseValid = true;
                 }
                 else
                 {

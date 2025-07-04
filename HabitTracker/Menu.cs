@@ -38,7 +38,7 @@ namespace HabitTracker
 
             foreach (string option in Options)
             {
-                Console.WriteLine($"\t{i}: {option}");
+                Console.WriteLine($"\t{i,4}: {option}");
                 i++;
             }
         }
