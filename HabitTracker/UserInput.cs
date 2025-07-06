@@ -9,6 +9,8 @@ namespace HabitTracker
 {
     internal static class UserInput
     {
+        private static readonly string dateFormat = "yyyy-MM-dd";
+
         internal static string GetUserInput(string message)
         {
             Console.Write(message);
@@ -23,7 +25,7 @@ namespace HabitTracker
 
             do
             {
-                message = (firstTime) ? message : "ERROR: Please enter a valid number (GNI): ";
+                message = (firstTime) ? message : "ERROR: Please enter a valid number! ";
                 numberInput = GetUserInput(message);
                 firstTime = false;
 
@@ -50,7 +52,7 @@ namespace HabitTracker
 
             do
             {
-                message = (firstTime) ? message : "ERROR: Please enter a valid date (yyyy-mm-dd): ";
+                message = (firstTime) ? message : $"ERROR: Please enter a valid date ({dateFormat}): ";
                 dateInput = GetUserInput(message);
 
                 if (dateInput == "")
@@ -72,7 +74,7 @@ namespace HabitTracker
                 }
                 else
                 {
-                    validDate = DateOnly.TryParseExact(dateInput, "yyyy-MM-dd", out output);
+                    validDate = DateOnly.TryParseExact(dateInput, dateFormat, out output);
                 }
 
                 firstTime = false;
@@ -87,7 +89,6 @@ namespace HabitTracker
             Console.Write("Press any key to continue...");
             Console.ReadKey();
         }
-
         internal static bool GetUserConfirmation(string action)
         {
             bool confirmationResult = false;
@@ -97,12 +98,12 @@ namespace HabitTracker
             {
                 string response = UserInput.GetUserInput($"Confirm {action}: Press \"Y\" for yes or \"N\" for no: ");
 
-                if (response.ToLower() == "y")
+                if (response.ToLower().Trim() == "y")
                 {
                     confirmationResult = true;
                     responseValid = true;
                 }
-                else if (response.ToLower() == "n")
+                else if (response.ToLower().Trim() == "n")
                 {
                     confirmationResult = false;
                     responseValid = true;

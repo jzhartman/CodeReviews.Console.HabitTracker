@@ -10,10 +10,11 @@ namespace HabitTracker
      *  ReadMe file
      *  Parameterized queries
      *  Add report functionality
-     *  
-     *  
-     *  TODO: Allow user to escape entries during input operations
-     *  TODO: Allow user to update habit (change name, or change unit)
+     *      > Basic: Annual report          LET USER DEFINE THE RANGE???
+     *          - Total Sum
+     *          - Average
+     *          - Longest Streak
+     *      
      *  
      */
 
@@ -26,6 +27,276 @@ namespace HabitTracker
             this.sqlData = sqlData;
             MenuHandler_MainMenu();
         }
+
+        private void MenuHandler_MainMenu()
+        {
+            bool closeApp = false;
+
+            while (closeApp == false)
+            {
+                PrintTitleBar("Main Menu");
+                PrintHabitsList();
+                PrintMainMenu();
+
+                int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
+                string commandInput = userSelection.ToString();
+
+                switch (commandInput)
+                {
+                    case "1":
+                        ProcessManager_SelectHabit();
+                        break;
+                    case "2":
+                        ProcessManager_CreateHabit();
+                        break;
+                    case "3":
+                        ProcessManager_DeleteHabit();
+                        break;
+                    case "4":
+                        PrintGoodbyeMessage();
+                        closeApp = true;
+                        break;
+                    default:
+                        Console.WriteLine();
+                        Console.WriteLine("ERROR - Invalid selection detected");
+                        break;
+                }
+            }
+        }
+        private void MenuHandler_SelectHabit(HabitModel habit)
+        {
+            bool returnToMainMenu = false;
+            bool validInput = true;
+
+            while (returnToMainMenu == false)
+            {
+                var sortedRecords = GetSortedRecordsList(habit);
+                PrintTitleBar($"View Records For Habit: {habit.HabitName}");
+                PrintRecordsList(sortedRecords, habit);
+                PrintSelectHabitMenu();
+
+                do
+                {
+                    int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
+                    string commandInput = userSelection.ToString();
+
+                    switch (commandInput)
+                    {
+                        case "1":
+                            ProcessManager_AddRecord(sortedRecords, habit);
+                            break;
+                        case "2":
+                            ProcessManager_DeleteRecord(sortedRecords, habit);
+                            break;
+                        case "3":
+                            ProcessManager_UpdateRecord(sortedRecords, habit);
+                            break;
+                        case "4":
+                            ProcessManager_AnnualReport(sortedRecords, habit);
+                            break;
+                        case "5":
+                            returnToMainMenu = true;
+                            break;
+                        default:
+                            validInput = false;
+                            Console.WriteLine();
+                            Console.WriteLine("ERROR - Invalid selection detected");
+                            break;
+                    }
+                } while (validInput == false); 
+            }
+        }
+
+        private void ProcessManager_AnnualReport(List<RecordModel> sortedRecords, HabitModel habit)
+        {
+            string startDate = DateTime.Now.AddYears(-1).ToString("yyyy-MM-dd)");
+            string endDate = DateTime.Now.ToString("yyyy-MM-dd)");
+
+            PrintTitleBar("");
+            PrintAnnualReportHeader(habit, startDate, endDate);
+
+
+            int count = GetAnnualCount(sortedRecords);
+            int sum = GetAnnualSum(sortedRecords);
+            int average = GetAnnualAverage(sortedRecords);
+            int streak = GetLongestStreak(sortedRecords);
+
+
+        }
+
+        private void PrintAnnualReportHeader(HabitModel habit, string startDate, string endDate)
+        {
+            Console.WriteLine($"Generating annual report for {habit.HabitName}");
+            Console.WriteLine($"Start date: {startDate}");
+            Console.WriteLine($"End Date: {endDate}");
+            DrawHorizontalLine(65, false, true);
+        }
+
+        private int GetStartIndex(List<RecordModel> sortedRecords, string startDate)
+        {
+            return 1;
+        }
+        private int GetEndIndex(string endDate)
+        {
+            return 1;
+        }
+
+        private int GetAnnualCount(List<RecordModel> sortedRecords)
+        {
+            int count = sortedRecords.Count();
+            throw new NotImplementedException();
+        }
+        private int GetAnnualSum(List<RecordModel> sortedRecords)
+        {
+            throw new NotImplementedException();
+        }
+        private int GetAnnualAverage(List<RecordModel> sortedRecords)
+        {
+            throw new NotImplementedException();
+        }
+        private int GetLongestStreak(List<RecordModel> sortedRecords)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
+
+
+
+
+
+
+
+
+        private void ProcessManager_SelectHabit()
+        {
+            PrintTitleBar("");
+            PrintHabitsList();
+            var habit = GetHabitFromList("view");
+
+            //PrintRecordsListForHabit(habit);
+            MenuHandler_SelectHabit(habit);
+        }
+        private void ProcessManager_CreateHabit()
+        {
+            PrintTitleBar("");
+            PrintHabitsList();
+            var habitName = GetNewHabitName();
+
+            PrintTitleBar("");
+            PrintUnitsList();
+            var unitName = GetUnitNameFromList();
+
+            PrintHabitData(habitName, unitName);
+            ConfirmAddHabit(habitName, unitName);
+        }
+        private void ProcessManager_DeleteHabit()
+        {
+            PrintTitleBar("");
+            PrintHabitsList();
+            var habit = GetHabitFromList("delete");
+
+            var recordCount = GetSortedRecordsList(habit).Count();
+
+            PrintHabitDeleteWarning(habit.HabitName, recordCount);
+            ConfirmHabitDelete(habit);
+        }
+        private void ProcessManager_AddRecord(List<RecordModel> sortedRecords, HabitModel habit)
+        {
+            PrintTitleBar("");
+            PrintRecordsList( sortedRecords, habit);
+            PrintAddRecordInstruction(habit.HabitName);
+            (DateOnly date, int quantity) = GetRecordData(habit);
+
+            PrintRecordData("Adding", quantity, habit.UnitName, habit.HabitName, date.ToString("yyyy-MM-dd"));
+            UserInput.PressAnyKeyToContinue();
+
+            sqlData.InsertRecord(habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
+        }
+        private void ProcessManager_UpdateRecord(List<RecordModel> sortedRecords, HabitModel habit)
+        {
+            var record = GetRecordFromList(sortedRecords, "change", habit);
+            PrintRecordData("Changing", record.Quantity, habit.UnitName, habit.HabitName, record.Date.ToString("yyyy-MM-dd"));
+
+            (bool dateChanged, var newDate) = GetUpdatedDateFromUser(DateOnly.FromDateTime(record.Date));
+            (bool quantityChanged, var newQuantity) = GetUpdatedQuantityFromUser(record.Quantity);
+
+            PrintRecordUpdateMessage(dateChanged, quantityChanged, record.Date.ToString("yyyy-MM-dd"), newDate.ToString("yyyy-MM-dd"), record.Quantity, newQuantity, habit.UnitName);
+            ConfirmRecordUpdate(record.Id, newDate.ToString("yyyy-MM-dd"), newQuantity);
+        }
+        private void ProcessManager_DeleteRecord(List<RecordModel> sortedRecords, HabitModel habit)
+        {
+            var record = GetRecordFromList(sortedRecords, "delete", habit);
+
+            PrintRecordData("Preparing to delete", record.Quantity, habit.UnitName, habit.HabitName, record.Date.ToString("yyyy-MM-dd"));
+
+            ConfirmRecordDelete(record.Id);
+        }
+
+
+
+        private void ConfirmHabitDelete(HabitModel habit)
+        {
+            bool habitDeleted = UserInput.GetUserConfirmation("delete");
+            string message = $"User cancelled the deletion of {habit.HabitName}.";
+
+            if (habitDeleted)
+            {
+                sqlData.DeleteAllRecordsForAHabit(habit.HabitId);
+                sqlData.DeleteHabit(habit.HabitId);
+
+                message = $"{habit.HabitName} was successfully deleted!";
+            }
+
+            Console.WriteLine(message);
+            UserInput.PressAnyKeyToContinue();
+        }
+        private void ConfirmRecordDelete(int recordId)
+        {
+            bool recordDeleted = UserInput.GetUserConfirmation("delete");
+            string message = "Record delete cancelled!";
+
+            if (recordDeleted)
+            {
+                message = "Record successfuly deleted!";
+                sqlData.DeleteRecord("Records", recordId);
+            }
+
+            Console.WriteLine(message);
+            UserInput.PressAnyKeyToContinue();
+        }
+        private void ConfirmRecordUpdate(int recordId, string newDate, int newQuantity)
+        {
+            bool recordUpdated = UserInput.GetUserConfirmation("update");
+            string message = "Record update cancelled!";
+
+            if (recordUpdated)
+            {
+                message = "Record successfully updated!";
+                sqlData.UpdateRecord("Records", recordId, newDate, newQuantity);
+            }
+
+            Console.WriteLine(message);
+            UserInput.PressAnyKeyToContinue();
+        }
+        private void ConfirmAddHabit(string habitName, string unitName)
+        {
+            bool habitAdded = UserInput.GetUserConfirmation("delete");
+            string message = "Habit delete cancelled!";
+
+            if (habitAdded)
+            {
+                message = "New habit successfully added!";
+                sqlData.InsertUnit(unitName);
+                sqlData.InsertHabit(habitName, unitName);
+            }
+
+            Console.WriteLine(message);
+            UserInput.PressAnyKeyToContinue();
+        }
+
+
 
         private void RefreshConsoleWindow()
         {
@@ -55,7 +326,7 @@ namespace HabitTracker
 
             foreach (var habit in habits.Select((value, i) => (value, i)))
             {
-                Console.WriteLine($"\t{habit.i + 1, 4}: {habit.value.HabitName}");
+                Console.WriteLine($"\t{habit.i + 1,4}: {habit.value.HabitName}");
             }
 
             DrawHorizontalLine(65, true, true);
@@ -134,213 +405,52 @@ namespace HabitTracker
 
             viewHabitMenu.PrintMenu();
         }
-
-
-
-        private void MenuHandler_MainMenu()
+        private void PrintHabitDeleteWarning(string habitName, int recordCount)
         {
-            bool closeApp = false;
+            Console.WriteLine();
+            Console.WriteLine($"WARNING: Deleting {habitName} will also delete the {recordCount} records associated with it. This cannot be undone.");
+            Console.WriteLine();
+        }
+        private void PrintRecordUpdateMessage(bool dateChanged, bool quantityChanged, string originalDate, string newDate, int originalQuantity, int newQuantity, string unit)
+        {
+            string output = string.Empty;
 
-            while (closeApp == false)
+            if (dateChanged && !quantityChanged)
             {
-                PrintTitleBar("Main Menu");
-                PrintHabitsList();
-                PrintMainMenu();
-
-                int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
-                string commandInput = userSelection.ToString();
-
-                switch (commandInput)
-                {
-                    case "1":
-                        ProcessManager_SelectHabit();
-                        break;
-                    case "2":
-                        ProcessManager_CreateHabit();
-                        break;
-                    case "3":
-                        ProcessManager_DeleteHabit();
-                        break;
-                    case "4":
-                        PrintGoodbyeMessage();
-                        closeApp = true;
-                        break;
-                    default:
-                        Console.WriteLine();
-                        Console.WriteLine("ERROR - Invalid selection detected");
-                        break;
-                }
+                output = $"Preparing to change date from {originalDate} to {newDate}.";
             }
-        }
-        private void MenuHandler_SelectHabit(HabitModel habit)
-        {
-            bool returnToMainMenu = false;
-            bool validInput = true;
-
-            while (returnToMainMenu == false)
+            else if (!dateChanged && quantityChanged)
             {
-                var sortedRecords = GetSortedRecordsList(habit);
-                PrintTitleBar($"View Records For Habit: {habit.HabitName}");
-                PrintRecordsList(sortedRecords, habit);
-                PrintSelectHabitMenu();
-
-                do
-                {
-                    int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
-                    string commandInput = userSelection.ToString();
-
-                    switch (commandInput)
-                    {
-                        case "1":
-                            ProcessManager_AddRecord(sortedRecords, habit);
-                            break;
-                        case "2":
-                            ProcessManager_DeleteRecord(sortedRecords, habit);
-                            break;
-                        case "3":
-                            ProcessManager_UpdateRecord(sortedRecords, habit);
-                            break;
-                        case "4":
-                            returnToMainMenu = true;
-                            break;
-                        default:
-                            validInput = false;
-                            Console.WriteLine();
-                            Console.WriteLine("ERROR - Invalid selection detected");
-                            break;
-                    }
-                } while (validInput == false); 
+                output = $"Preparing to change quantity from {originalQuantity} {unit} to {newQuantity} {unit}.";
             }
-        }
-
-
-
-
-        private void ProcessManager_SelectHabit()
-        {
-            PrintTitleBar("");
-            PrintHabitsList();
-            var habit = GetHabitFromList("view");
-
-            //PrintRecordsListForHabit(habit);
-            MenuHandler_SelectHabit(habit);
-        }
-        private void ProcessManager_CreateHabit()
-        {
-            PrintTitleBar("");
-            PrintHabitsList();
-            var habitName = GetNewHabitName();
-
-            PrintTitleBar("");
-            PrintUnitsList();
-            var unitName = GetUnitNameFromList();
-
-            PrintHabitData(habitName, unitName);
-            ConfirmAddHabit(habitName, unitName);
-        }
-        private void ProcessManager_DeleteHabit()
-        {
-            PrintTitleBar("");
-            PrintHabitsList();
-            var habit = GetHabitFromList("delete");
-
-            var recordCount = GetSortedRecordsList(habit).Count();
-
-            PrintHabitDeleteWarning(habit.HabitName, recordCount);
-            ConfirmHabitDelete(habit);
-        }
-        private void ProcessManager_AddRecord(List<RecordModel> sortedRecords, HabitModel habit)
-        {
-            PrintTitleBar("");
-            PrintRecordsList( sortedRecords, habit);
-            PrintAddRecordInstruction(habit.HabitName);
-            (DateOnly date, int quantity) = GetRecordData(habit);
-
-            PrintRecordData("Adding", quantity, habit.UnitName, habit.HabitName, date.ToString("yyyy-MM-dd"));
-
-            sqlData.InsertRecord(habit.HabitId, date.ToString("yyyy-MM-dd"), quantity);
-        }
-        private void ProcessManager_UpdateRecord(List<RecordModel> sortedRecords, HabitModel habit)
-        {
-            var record = GetRecordFromList(sortedRecords, "change", habit);
-            PrintRecordData("Changing", record.Quantity, habit.UnitName, habit.HabitName, record.Date.ToString("yyyy-MM-dd"));
-
-            (bool dateChanged, var newDate) = GetUpdatedDateFromUser(DateOnly.FromDateTime(record.Date));
-            (bool quantityChanged, var newQuantity) = GetUpdatedQuantityFromUser(record.Quantity);
-
-            PrintRecordUpdateMessage(dateChanged, quantityChanged, record.Date.ToString("yyyy-MM-dd"), newDate.ToString("yyyy-MM-dd"), record.Quantity, newQuantity, habit.UnitName);
-            ConfirmRecordUpdate(record.Id, newDate.ToString("yyyy-MM-dd"), newQuantity);
-        }
-        private void ProcessManager_DeleteRecord(List<RecordModel> sortedRecords, HabitModel habit)
-        {
-            var record = GetRecordFromList(sortedRecords, "delete", habit);
-
-            PrintRecordData("Preparing to delete", record.Quantity, habit.UnitName, habit.HabitName, record.Date.ToString("yyyy-MM-dd"));
-
-            ConfirmRecordDelete(record.Id);
-        }
-
-
-
-
-        private void ConfirmHabitDelete(HabitModel habit)
-        {
-            bool habitDeleted = UserInput.GetUserConfirmation("delete");
-            string message = $"User cancelled the deletion of habit {habit.HabitName}.";
-
-            if (habitDeleted)
+            else if (dateChanged && quantityChanged)
             {
-                sqlData.DeleteAllRecordsForAHabit(habit.HabitId);
-                sqlData.DeleteHabit(habit.HabitId);
-
-                message = $"Habit {habit.HabitName} was successfully deleted!";
+                output = $"Preparing to change date from {originalDate} to {newDate} and changed quantity from {originalQuantity} to {newQuantity}.";
+            }
+            else
+            {
+                output = "No changes were made to the data!";
             }
 
-            Console.WriteLine(message);
-            UserInput.PressAnyKeyToContinue();
+            Console.WriteLine(output);
         }
-        private void ConfirmRecordDelete(int recordId)
+        private void PrintRecordData(string action, int quantity, string unitName, string habitName, string date)
         {
-            bool recordDeleted = UserInput.GetUserConfirmation("delete");
-            string message = "Record delete cancelled!";
+            Console.WriteLine();
+            Console.WriteLine($"{action} record for {quantity} {unitName} of {habitName} on {date}");
 
-            if (recordDeleted)
-            {
-                message = "Record successfuly deleted!";
-                sqlData.DeleteRecord("Records", recordId);
-            }
-
-            Console.WriteLine(message);
-            UserInput.PressAnyKeyToContinue();
         }
-        private void ConfirmRecordUpdate(int recordId, string newDate, int newQuantity)
+        private void PrintHabitData(string habitName, string unitName)
         {
-            bool recordUpdated = UserInput.GetUserConfirmation("update");
-            string message = "Record update cancelled!";
-
-            if (recordUpdated)
-            {
-                message = "Record successfully updated!";
-                sqlData.UpdateRecord("Records", recordId, newDate, newQuantity);
-            }
-
-            Console.WriteLine(message);
-            UserInput.PressAnyKeyToContinue();
+            Console.WriteLine();
+            Console.WriteLine("---------------------------------------------------------");
+            Console.WriteLine($"Preparing to add new habit, {habitName}, measured with units, {unitName}.");
         }
-        private void ConfirmAddHabit(string habitName, string unitName)
+        private void PrintAddRecordInstruction(string habitName)
         {
-            bool habitAdded = UserInput.GetUserConfirmation("delete");
-            string message = "Habit delete cancelled!";
-
-            if (habitAdded)
-            {
-                message = "New habit successfully added!";
-                sqlData.InsertUnit(unitName);
-                sqlData.InsertHabit(habitName, unitName);
-            }
-
-            Console.WriteLine(message);
-            UserInput.PressAnyKeyToContinue();
+            Console.WriteLine();
+            Console.WriteLine($"Enter data for new record of {habitName}");
+            Console.WriteLine();
         }
 
 
@@ -398,69 +508,6 @@ namespace HabitTracker
 
             return (date, quantity);
         }
-
-
-
-
-
-
-        private void PrintHabitDeleteWarning(string habitName, int recordCount)
-        {
-            Console.WriteLine();
-            Console.WriteLine($"WARNING: Deleting {habitName} will also delete the {recordCount} records associated with it. This cannot be undone.");
-            Console.WriteLine();
-        }
-        private void PrintRecordUpdateMessage(bool dateChanged, bool quantityChanged, string originalDate, string newDate, int originalQuantity, int newQuantity, string unit)
-        {
-            string output = string.Empty;
-
-            if (dateChanged && !quantityChanged)
-            {
-                output = $"Preparing to change date from {originalDate} to {newDate}.";
-            }
-            else if (!dateChanged && quantityChanged)
-            {
-                output = $"Preparing to change quantity from {originalQuantity} {unit} to {newQuantity} {unit}.";
-            }
-            else if (dateChanged && quantityChanged)
-            {
-                output = $"Preparing to change date from {originalDate} to {newDate} and changed quantity from {originalQuantity} to {newQuantity}.";
-            }
-            else
-            {
-                output = "No changes were made to the data!";
-            }
-
-            Console.WriteLine(output);
-        }
-        private void PrintRecordData(string action, int quantity, string unitName, string habitName, string date)
-        {
-            Console.WriteLine();
-            Console.WriteLine($"{action} record for {quantity} {unitName} of {habitName} on {date}");
-        }
-        private void PrintHabitData(string habitName, string unitName)
-        {
-            Console.WriteLine();
-            Console.WriteLine("---------------------------------------------------------");
-            Console.WriteLine($"Preparing to add new habit, {habitName}, measured with units, {unitName}.");
-        }
-        private void PrintAddRecordInstruction(string habitName)
-        {
-            Console.WriteLine();
-            Console.WriteLine($"Enter data for new record of {habitName}");
-            Console.WriteLine();
-        }
-
-
-
-        /*
-         *  Items below here, not refactored
-         * 
-         * 
-         */
-
-
-
         private string GetUnitNameFromList()
         {
             var unitName = string.Empty;
@@ -468,7 +515,6 @@ namespace HabitTracker
 
             int userSelection = UserInput.GetNumberInput($"Enter ID of the unit you wish to use (or enter blank to create a new unit): ", 1, unitList.Count(), true);
 
-            
             if (userSelection == Int32.MinValue)
             {
                 unitName = GetNewUnitName();
@@ -499,7 +545,6 @@ namespace HabitTracker
 
             return unitName;
         }
-
         private string GetNewHabitName()
         {
             var habitName = string.Empty;
