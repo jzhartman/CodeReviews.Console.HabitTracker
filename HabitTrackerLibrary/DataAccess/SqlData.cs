@@ -20,17 +20,17 @@ namespace HabitTrackerLibrary.DataAccess
         }
 
 
-        public void InsertRecordByHabitName(string habitName, string date, int quantity)
+        public void InsertRecordByHabitName(string habitName, string date, double quantity)
         {
             db.Execute($"insert into records(HabitId, Date, Quantity) values( (select Id from habits where habits.Name = '{habitName}'), '{date}', '{quantity}')");
         }
 
-        public void InsertRecord(int habitId, string date, int quantity)
+        public void InsertRecord(int habitId, string date, double quantity)
         {
             db.Execute($"insert into records(HabitId, Date, Quantity) values({habitId}, '{date}', '{quantity}')");
         }
 
-        public void UpdateRecord(string tableName, int recordId, string date, int quantity)
+        public void UpdateRecord(string tableName, int recordId, string date, double quantity)
         {
             db.Execute($"update {tableName} set Date = '{date}', quantity = '{quantity}' where Id = {recordId}");
         }
@@ -99,12 +99,6 @@ namespace HabitTrackerLibrary.DataAccess
             }
         }
 
-        public HabitModel GetHabitByName(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-
         public List<RecordModel> GetAllRecords(int habitId)
         {
             using (var connection = new SqliteConnection(connectionStringName))
@@ -126,7 +120,7 @@ namespace HabitTrackerLibrary.DataAccess
                             {
                                 Id = reader.GetInt32(0),
                                 Date = DateTime.ParseExact(reader.GetString(1), "yyyy-MM-dd", new CultureInfo("en-US")),
-                                Quantity = reader.GetInt32(2),
+                                Quantity = reader.GetDouble(2),
                             }
                          );
                     }

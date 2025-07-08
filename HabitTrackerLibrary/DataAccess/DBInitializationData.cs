@@ -88,7 +88,7 @@ namespace HabitTrackerLibrary.DataAccess
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         HabitId INTEGER,
                         Date TEXT,
-                        Quantity INTEGER,
+                        Quantity REAL,
                         FOREIGN KEY (HabitId) REFERENCES Habits(Id)
                     )
                 ");

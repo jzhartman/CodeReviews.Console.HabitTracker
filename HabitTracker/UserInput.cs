@@ -16,10 +16,10 @@ namespace HabitTracker
             Console.Write(message);
             return Console.ReadLine();
         }
-        internal static int GetNumberInput(string message, int min, int max, bool allowBlanks = false)
+        internal static double GetNumberInput(string message, double min, double max, bool allowBlanks = false)
         {
             string numberInput = string.Empty;
-            int output;
+            double output;
             bool firstTime = true;
             bool validNumber = false;
 
@@ -29,7 +29,7 @@ namespace HabitTracker
                 numberInput = GetUserInput(message);
                 firstTime = false;
 
-                validNumber = Int32.TryParse(numberInput, out output);
+                validNumber = Double.TryParse(numberInput, out output);
 
                 validNumber = (output < min || output > max) ? false : true;
 
@@ -43,7 +43,7 @@ namespace HabitTracker
 
             return output;
         }
-        internal static DateOnly GetDateInput(string message, string blankBehavior)
+        internal static DateOnly GetDateInput(string message, string blankBehavior = "unused")
         {
             string dateInput;
             DateOnly output;

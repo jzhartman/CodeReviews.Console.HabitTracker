@@ -38,7 +38,7 @@ namespace HabitTracker
                 PrintHabitsList();
                 PrintMainMenu();
 
-                int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
+                int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
                 string commandInput = userSelection.ToString();
 
                 switch (commandInput)
@@ -77,7 +77,7 @@ namespace HabitTracker
 
                 do
                 {
-                    int userSelection = UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
+                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
                     string commandInput = userSelection.ToString();
 
                     switch (commandInput)
@@ -92,7 +92,7 @@ namespace HabitTracker
                             ProcessManager_UpdateRecord(sortedRecords, habit);
                             break;
                         case "4":
-                            ProcessManager_AnnualReport(sortedRecords, habit);
+                            MenuHandler_SelectReport(habit);
                             break;
                         case "5":
                             returnToMainMenu = true;
@@ -107,29 +107,101 @@ namespace HabitTracker
             }
         }
 
-        private void ProcessManager_AnnualReport(List<RecordModel> sortedRecords, HabitModel habit)
+        private void MenuHandler_SelectReport(HabitModel habit)
         {
-            string startDate = DateTime.Now.AddYears(-1).ToString("yyyy-MM-dd)");
-            string endDate = DateTime.Now.ToString("yyyy-MM-dd)");
+            bool returnToPreviousMenu = false;
+            bool validInput = true;
 
-            PrintTitleBar("");
-            PrintAnnualReportHeader(habit, startDate, endDate);
+            while (returnToPreviousMenu == false)
+            {
+                string startDate = string.Empty;
+                string endDate = string.Empty;
 
+                PrintTitleBar($"Select Report for: {habit.HabitName}");
+                PrintSelectReportMenu();
 
-            int count = GetAnnualCount(sortedRecords);
-            int sum = GetAnnualSum(sortedRecords);
-            int average = GetAnnualAverage(sortedRecords);
-            int streak = GetLongestStreak(sortedRecords);
+                do
+                {
+                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
+                    string commandInput = userSelection.ToString();
 
+                    switch (commandInput)
+                    {
+                        case "1":
+                            (startDate, endDate) = GetDatesForPastYear();
+                            break;
+                        case "2":
+                            (startDate, endDate) = GetDatesForYearToDate();
+                            break;
+                        case "3":
+                            (startDate, endDate) = GetDateForCustomRange();
+                            break;
+                        case "4":
+                            returnToPreviousMenu = true;
+                            break;
+                        default:
+                            validInput = false;
+                            Console.WriteLine();
+                            Console.WriteLine("ERROR - Invalid selection detected");
+                            break;
+                    }
+                } while (validInput == false);
 
+                ProcessManager_SelectReport(habit, startDate, endDate);
+
+            }
+        }
+        private (string, string) GetDatesForPastYear()
+        {
+            var startDate = DateTime.Now.AddYears(-1).ToString("yyyy-MM-dd");
+            var endDate = DateTime.Now.ToString("yyyy-MM-dd");
+
+            return (startDate, endDate);
+        }
+        private (string, string) GetDatesForYearToDate()
+        {
+            var startDate = DateTime.Now.Year.ToString("yyyy-MM-dd");
+            var endDate = DateTime.Now.ToString("yyyy-MM-dd");
+
+            return (startDate, endDate);
+        }
+        private (string, string) GetDateForCustomRange()
+        {
+            var startDate = UserInput.GetDateInput("Enter start date: ").ToString("yyyy-MM-dd");
+            var endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today").ToString("yyyy-MM-dd");
+
+            return (startDate, endDate);
         }
 
-        private void PrintAnnualReportHeader(HabitModel habit, string startDate, string endDate)
+
+
+        private void ProcessManager_SelectReport(HabitModel habit, string startDate, string endDate)
         {
-            Console.WriteLine($"Generating annual report for {habit.HabitName}");
+            var sortedRecords = new List<RecordModel>();
+
+            PrintTitleBar("");
+
+
+            int count = GetRecordCountForDateRange(habit, startDate, endDate);
+            double sum = GetRecordSumForDateRange(habit, startDate, endDate);
+            double average = GetRecordAverageForDateRange(habit, startDate, endDate);
+            int streak = GetLongestStreakForDateRange(habit, startDate, endDate);
+
+            PrintReport(habit, startDate, endDate, count, sum, average, streak);
+        }
+
+
+        private void PrintReport(HabitModel habit, string startDate, string endDate, int count, double sum,  double average, int streak)
+        {
+            Console.WriteLine($"Generating report for {habit.HabitName}");
+            Console.WriteLine($"Unit: {habit.UnitName}");
             Console.WriteLine($"Start date: {startDate}");
             Console.WriteLine($"End Date: {endDate}");
             DrawHorizontalLine(65, false, true);
+            Console.WriteLine($"Total count: {count}");
+            Console.WriteLine($"Sum of records: {sum}");
+            Console.WriteLine($"Average: {average}");
+            Console.WriteLine($"Longest Streak: {streak}");
         }
 
         private int GetStartIndex(List<RecordModel> sortedRecords, string startDate)
@@ -141,20 +213,19 @@ namespace HabitTracker
             return 1;
         }
 
-        private int GetAnnualCount(List<RecordModel> sortedRecords)
-        {
-            int count = sortedRecords.Count();
-            throw new NotImplementedException();
-        }
-        private int GetAnnualSum(List<RecordModel> sortedRecords)
+        private int GetRecordCountForDateRange(HabitModel habit, string startDate, string endDate)
         {
             throw new NotImplementedException();
         }
-        private int GetAnnualAverage(List<RecordModel> sortedRecords)
+        private int GetRecordSumForDateRange(HabitModel habit, string startDate, string endDate)
         {
             throw new NotImplementedException();
         }
-        private int GetLongestStreak(List<RecordModel> sortedRecords)
+        private int GetRecordAverageForDateRange(HabitModel habit, string startDate, string endDate)
+        {
+            throw new NotImplementedException();
+        }
+        private int GetLongestStreakForDateRange(HabitModel habit, string startDate, string endDate)
         {
             throw new NotImplementedException();
         }
@@ -207,7 +278,7 @@ namespace HabitTracker
             PrintTitleBar("");
             PrintRecordsList( sortedRecords, habit);
             PrintAddRecordInstruction(habit.HabitName);
-            (DateOnly date, int quantity) = GetRecordData(habit);
+            (DateOnly date, double quantity) = GetRecordData(habit);
 
             PrintRecordData("Adding", quantity, habit.UnitName, habit.HabitName, date.ToString("yyyy-MM-dd"));
             UserInput.PressAnyKeyToContinue();
@@ -266,7 +337,7 @@ namespace HabitTracker
             Console.WriteLine(message);
             UserInput.PressAnyKeyToContinue();
         }
-        private void ConfirmRecordUpdate(int recordId, string newDate, int newQuantity)
+        private void ConfirmRecordUpdate(int recordId, string newDate, double newQuantity)
         {
             bool recordUpdated = UserInput.GetUserConfirmation("update");
             string message = "Record update cancelled!";
@@ -405,13 +476,30 @@ namespace HabitTracker
 
             viewHabitMenu.PrintMenu();
         }
+        private void PrintSelectReportMenu()
+        {
+            Menu viewHabitMenu = new Menu
+            (
+                "Select Report",
+                "Select an option below by entering the menu item number:",
+                new List<string>()
+                {
+                    "Past Year",
+                    "Year to Date",
+                    "Custom Range",
+                    "Return to Main Menu"
+                }
+            );
+
+            viewHabitMenu.PrintMenu();
+        }
         private void PrintHabitDeleteWarning(string habitName, int recordCount)
         {
             Console.WriteLine();
             Console.WriteLine($"WARNING: Deleting {habitName} will also delete the {recordCount} records associated with it. This cannot be undone.");
             Console.WriteLine();
         }
-        private void PrintRecordUpdateMessage(bool dateChanged, bool quantityChanged, string originalDate, string newDate, int originalQuantity, int newQuantity, string unit)
+        private void PrintRecordUpdateMessage(bool dateChanged, bool quantityChanged, string originalDate, string newDate, double originalQuantity, double newQuantity, string unit)
         {
             string output = string.Empty;
 
@@ -434,7 +522,7 @@ namespace HabitTracker
 
             Console.WriteLine(output);
         }
-        private void PrintRecordData(string action, int quantity, string unitName, string habitName, string date)
+        private void PrintRecordData(string action, double quantity, string unitName, string habitName, string date)
         {
             Console.WriteLine();
             Console.WriteLine($"{action} record for {quantity} {unitName} of {habitName} on {date}");
@@ -465,13 +553,13 @@ namespace HabitTracker
         {
             var habitList = sqlData.GetAllHabits();
 
-            int userSelection = UserInput.GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
+            int userSelection = (int)UserInput.GetNumberInput($"Enter ID of the Habit you wish to {action}: ", 1, habitList.Count());
             
             return habitList[userSelection - 1];
         }
         private RecordModel GetRecordFromList(List<RecordModel> sortedRecords, string action, HabitModel habit)
         {
-            int userSelection = UserInput.GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
+            int userSelection = (int)UserInput.GetNumberInput($"Enter ID of the record you wish to {action}: ", 1, sortedRecords.Count());
             
             return sortedRecords[userSelection - 1];
         }
@@ -488,7 +576,7 @@ namespace HabitTracker
 
             return (dateChanged, newDate);
         }
-        private (bool quantityChanged, int newQuantity) GetUpdatedQuantityFromUser(int originalQuantity)
+        private (bool quantityChanged, double newQuantity) GetUpdatedQuantityFromUser(double originalQuantity)
         {
             var quantityChanged = true;
             var newQuantity = UserInput.GetNumberInput($"Enter the new quantity for the record (or press enter to keep original quantity): ", 1, Int32.MaxValue, true);
@@ -501,7 +589,7 @@ namespace HabitTracker
 
             return (quantityChanged, newQuantity);
         }
-        private (DateOnly date, int quantity) GetRecordData(HabitModel habit)
+        private (DateOnly date, double quantity) GetRecordData(HabitModel habit)
         {
             var date = UserInput.GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
             var quantity = UserInput.GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitName}): ", 1, Int32.MaxValue);
@@ -513,7 +601,7 @@ namespace HabitTracker
             var unitName = string.Empty;
             var unitList = sqlData.GetAllUnits();
 
-            int userSelection = UserInput.GetNumberInput($"Enter ID of the unit you wish to use (or enter blank to create a new unit): ", 1, unitList.Count(), true);
+            int userSelection = (int)UserInput.GetNumberInput($"Enter ID of the unit you wish to use (or enter blank to create a new unit): ", 1, unitList.Count(), true);
 
             if (userSelection == Int32.MinValue)
             {
