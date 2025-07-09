@@ -43,10 +43,10 @@ namespace HabitTracker
 
             return output;
         }
-        internal static DateOnly GetDateInput(string message, string blankBehavior = "unused")
+        internal static DateTime GetDateInput(string message, string blankBehavior = "unused")
         {
             string dateInput;
-            DateOnly output;
+            DateTime output;
             bool firstTime = true;
             bool validDate = false;
 
@@ -59,22 +59,22 @@ namespace HabitTracker
                 {
                     if (blankBehavior == "today")
                     {
-                        output = DateOnly.FromDateTime(DateTime.Now);
+                        output = DateTime.Now;
                         validDate = true;
                     }
                     else if (blankBehavior == "original")
                     {
-                        output = DateOnly.MinValue;
+                        output = DateTime.MinValue;
                         validDate = true;
                     }
                     else
                     {
-                        output = DateOnly.MinValue;
+                        output = DateTime.MinValue;
                     }
                 }
                 else
                 {
-                    validDate = DateOnly.TryParseExact(dateInput, dateFormat, out output);
+                    validDate = DateTime.TryParse(dateInput, out output);
                 }
 
                 firstTime = false;

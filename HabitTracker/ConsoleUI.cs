@@ -1,19 +1,22 @@
 ﻿using HabitTrackerLibrary.DataAccess;
 using HabitTrackerLibrary.Models;
+using System;
 using System.Diagnostics;
 using System.Threading.Channels;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitTracker
 {
-    /*
+    /*  
+     *  VALIDATE CUSTOM DATE RANGES!!!!!
+     *      - EndDate > StartDate
+     *      - EndDate <= Today
+     *      
+     *  Date Ranges should not rely on matching strings.... Should convert to dateTime, then get bool value for > or <
+     *      
+     *  
      *  ReadMe file
      *  Parameterized queries
-     *  Add report functionality
-     *      > Basic: Annual report          LET USER DEFINE THE RANGE???
-     *          - Total Sum
-     *          - Average
-     *          - Longest Streak
      *      
      *  
      */
@@ -77,7 +80,7 @@ namespace HabitTracker
 
                 do
                 {
-                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
+                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 5);
                     string commandInput = userSelection.ToString();
 
                     switch (commandInput)
@@ -114,8 +117,8 @@ namespace HabitTracker
 
             while (returnToPreviousMenu == false)
             {
-                string startDate = string.Empty;
-                string endDate = string.Empty;
+                var startDate = new DateTime();
+                var endDate = new DateTime();
 
                 PrintTitleBar($"Select Report for: {habit.HabitName}");
                 PrintSelectReportMenu();
@@ -147,28 +150,30 @@ namespace HabitTracker
                     }
                 } while (validInput == false);
 
-                ProcessManager_SelectReport(habit, startDate, endDate);
-
+                if (returnToPreviousMenu == false)
+                {
+                    ProcessManager_SelectReport(habit, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
+                }
             }
         }
-        private (string, string) GetDatesForPastYear()
+        private (DateTime, DateTime) GetDatesForPastYear()
         {
-            var startDate = DateTime.Now.AddYears(-1).ToString("yyyy-MM-dd");
-            var endDate = DateTime.Now.ToString("yyyy-MM-dd");
+            var startDate = DateTime.Now.AddYears(-1);
+            var endDate = DateTime.Now;
 
             return (startDate, endDate);
         }
-        private (string, string) GetDatesForYearToDate()
+        private (DateTime, DateTime) GetDatesForYearToDate()
         {
-            var startDate = DateTime.Now.Year.ToString("yyyy-MM-dd");
-            var endDate = DateTime.Now.ToString("yyyy-MM-dd");
+            var startDate = DateTime.Parse(DateTime.Now.Year.ToString() + "-01-01");
+            var endDate = DateTime.Now;
 
             return (startDate, endDate);
         }
-        private (string, string) GetDateForCustomRange()
+        private (DateTime, DateTime) GetDateForCustomRange()
         {
-            var startDate = UserInput.GetDateInput("Enter start date: ").ToString("yyyy-MM-dd");
-            var endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today").ToString("yyyy-MM-dd");
+            var startDate = UserInput.GetDateInput("Enter start date: ");
+            var endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today");
 
             return (startDate, endDate);
         }
@@ -215,11 +220,19 @@ namespace HabitTracker
 
         private int GetRecordCountForDateRange(HabitModel habit, string startDate, string endDate)
         {
-            throw new NotImplementedException();
+            var sortedRecords = GetSortedRecordsList(habit);
+
+            int startIndex = sortedRecords.FindIndex(a => a.Date == DateTime.Parse(startDate));
+            if (startIndex == -1) {startIndex = 0;}
+            int stopIndex = sortedRecords.FindLastIndex(a => a.Date == DateTime.Parse(endDate));
+
+            return (stopIndex + 1) - startIndex;
         }
         private int GetRecordSumForDateRange(HabitModel habit, string startDate, string endDate)
         {
-            throw new NotImplementedException();
+            var sortedRecords = GetSortedRecordsList(habit);
+
+            return 1;
         }
         private int GetRecordAverageForDateRange(HabitModel habit, string startDate, string endDate)
         {
@@ -278,7 +291,7 @@ namespace HabitTracker
             PrintTitleBar("");
             PrintRecordsList( sortedRecords, habit);
             PrintAddRecordInstruction(habit.HabitName);
-            (DateOnly date, double quantity) = GetRecordData(habit);
+            (DateTime date, double quantity) = GetRecordData(habit);
 
             PrintRecordData("Adding", quantity, habit.UnitName, habit.HabitName, date.ToString("yyyy-MM-dd"));
             UserInput.PressAnyKeyToContinue();
@@ -290,7 +303,7 @@ namespace HabitTracker
             var record = GetRecordFromList(sortedRecords, "change", habit);
             PrintRecordData("Changing", record.Quantity, habit.UnitName, habit.HabitName, record.Date.ToString("yyyy-MM-dd"));
 
-            (bool dateChanged, var newDate) = GetUpdatedDateFromUser(DateOnly.FromDateTime(record.Date));
+            (bool dateChanged, var newDate) = GetUpdatedDateFromUser(record.Date);
             (bool quantityChanged, var newQuantity) = GetUpdatedQuantityFromUser(record.Quantity);
 
             PrintRecordUpdateMessage(dateChanged, quantityChanged, record.Date.ToString("yyyy-MM-dd"), newDate.ToString("yyyy-MM-dd"), record.Quantity, newQuantity, habit.UnitName);
@@ -470,6 +483,7 @@ namespace HabitTracker
                     "Add Record",
                     "Delete Record",
                     "Change Record",
+                    "Generate Report",
                     "Return to Main Menu"
                 }
             );
@@ -563,12 +577,12 @@ namespace HabitTracker
             
             return sortedRecords[userSelection - 1];
         }
-        private (bool dateChanged, DateOnly newDate) GetUpdatedDateFromUser(DateOnly originalDate)
+        private (bool dateChanged, DateTime newDate) GetUpdatedDateFromUser(DateTime originalDate)
         {
             var dateChanged = true;
             var newDate = UserInput.GetDateInput($"Enter the new date (or press enter to keep original date): ", "original");
 
-            if (newDate == DateOnly.MinValue)
+            if (newDate == DateTime.MinValue)
             {
                 newDate = originalDate;
                 dateChanged = false;
@@ -589,7 +603,7 @@ namespace HabitTracker
 
             return (quantityChanged, newQuantity);
         }
-        private (DateOnly date, double quantity) GetRecordData(HabitModel habit)
+        private (DateTime date, double quantity) GetRecordData(HabitModel habit)
         {
             var date = UserInput.GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
             var quantity = UserInput.GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitName}): ", 1, Int32.MaxValue);
