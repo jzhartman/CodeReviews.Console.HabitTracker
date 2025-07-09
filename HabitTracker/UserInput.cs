@@ -47,12 +47,10 @@ namespace HabitTracker
         {
             string dateInput;
             DateTime output;
-            bool firstTime = true;
             bool validDate = false;
 
             do
             {
-                message = (firstTime) ? message : $"ERROR: Please enter a valid date ({dateFormat}): ";
                 dateInput = GetUserInput(message);
 
                 if (dateInput == "")
@@ -75,10 +73,22 @@ namespace HabitTracker
                 else
                 {
                     validDate = DateTime.TryParse(dateInput, out output);
+
+                    if (validDate == false)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine($"ERROR: Date invalid date entered! Please follow the format: \"{dateFormat}\"");
+                        Console.WriteLine();
+                    }
+
+                    if (output > DateTime.Now)
+                    { 
+                        validDate = false;
+                        Console.WriteLine();
+                        Console.WriteLine($"ERROR: Date cannot be greater than today! ");
+                        Console.WriteLine();
+                    }
                 }
-
-                firstTime = false;
-
             } while (validDate == false);
 
             return output;
