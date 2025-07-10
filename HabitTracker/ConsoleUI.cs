@@ -13,6 +13,9 @@ namespace HabitTracker
      *      - EndDate <= Today
      *      
      *  Date Ranges should not rely on matching strings.... Should convert to dateTime, then get bool value for > or <
+     *  
+     *  Date have been changed to DateTime and cannot be greater than today
+     *  Need to review all logic surrounding report date generation
      *      
      *  
      *  ReadMe file
@@ -24,6 +27,40 @@ namespace HabitTracker
     public class ConsoleUI
     {
         private readonly SqlData sqlData;
+        private readonly Menu mainMenu = new Menu(
+            "Main Menu",
+            "Select an option below by entering the menu item number:",
+            new List<string>()
+            {
+                "Select Habit",
+                "Add New Habit",
+                "Delete Habit",
+                "Exit Application"
+            }
+        );
+        private readonly Menu habitMenu = new Menu(
+            "View Habit",
+            "Select an option below by entering the menu item number:",
+            new List<string>()
+            {
+                "Add Record",
+                "Delete Record",
+                "Change Record",
+                "Generate Report",
+                "Return to Main Menu"
+            }
+        );
+        private readonly Menu reportMenu = new Menu(
+            "Select Report",
+            "Select an option below by entering the menu item number:",
+            new List<string>()
+            {
+                "Past Year",
+                "Year to Date",
+                "Custom Range",
+                "Return to Main Menu"
+            }
+        );
 
         public ConsoleUI(SqlData sqlData)
         {
@@ -39,23 +76,22 @@ namespace HabitTracker
             {
                 PrintTitleBar("Main Menu");
                 PrintHabitsList();
-                PrintMainMenu();
+                mainMenu.PrintMenu();
 
-                int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
-                string commandInput = userSelection.ToString();
+                int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, mainMenu.Options.Count);
 
-                switch (commandInput)
+                switch (userSelection)
                 {
-                    case "1":
+                    case 1:
                         ProcessManager_SelectHabit();
                         break;
-                    case "2":
+                    case 2:
                         ProcessManager_CreateHabit();
                         break;
-                    case "3":
+                    case 3:
                         ProcessManager_DeleteHabit();
                         break;
-                    case "4":
+                    case 4:
                         PrintGoodbyeMessage();
                         closeApp = true;
                         break;
@@ -76,28 +112,27 @@ namespace HabitTracker
                 var sortedRecords = GetSortedRecordsList(habit);
                 PrintTitleBar($"View Records For Habit: {habit.HabitName}");
                 PrintRecordsList(sortedRecords, habit);
-                PrintSelectHabitMenu();
+                habitMenu.PrintMenu();
 
                 do
                 {
-                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 5);
-                    string commandInput = userSelection.ToString();
+                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, habitMenu.Options.Count);
 
-                    switch (commandInput)
+                    switch (userSelection)
                     {
-                        case "1":
+                        case 1:
                             ProcessManager_AddRecord(sortedRecords, habit);
                             break;
-                        case "2":
+                        case 2:
                             ProcessManager_DeleteRecord(sortedRecords, habit);
                             break;
-                        case "3":
+                        case 3:
                             ProcessManager_UpdateRecord(sortedRecords, habit);
                             break;
-                        case "4":
+                        case 4:
                             MenuHandler_SelectReport(habit);
                             break;
-                        case "5":
+                        case 5:
                             returnToMainMenu = true;
                             break;
                         default:
@@ -121,25 +156,24 @@ namespace HabitTracker
                 var endDate = new DateTime();
 
                 PrintTitleBar($"Select Report for: {habit.HabitName}");
-                PrintSelectReportMenu();
+                reportMenu.PrintMenu();
 
                 do
                 {
-                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, 4);
-                    string commandInput = userSelection.ToString();
+                    int userSelection = (int)UserInput.GetNumberInput("Enter menu selection: ", 1, reportMenu.Options.Count);
 
-                    switch (commandInput)
+                    switch (userSelection)
                     {
-                        case "1":
+                        case 1:
                             (startDate, endDate) = GetDatesForPastYear();
                             break;
-                        case "2":
+                        case 2:
                             (startDate, endDate) = GetDatesForYearToDate();
                             break;
-                        case "3":
+                        case 3:
                             (startDate, endDate) = GetDateForCustomRange();
                             break;
-                        case "4":
+                        case 4:
                             returnToPreviousMenu = true;
                             break;
                         default:
@@ -152,7 +186,7 @@ namespace HabitTracker
 
                 if (returnToPreviousMenu == false)
                 {
-                    ProcessManager_SelectReport(habit, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
+                    ProcessManager_SelectReport(habit, startDate, endDate);
                 }
             }
         }
@@ -173,74 +207,141 @@ namespace HabitTracker
         private (DateTime, DateTime) GetDateForCustomRange()
         {
             var startDate = UserInput.GetDateInput("Enter start date: ");
-            var endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today");
+            var endDate = new DateTime();
+            bool firstTimeFlag = true;
+
+            do
+            {
+                if (firstTimeFlag == false)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("ERROR: End date must be on or after the startDate!");
+                    Console.WriteLine();
+                }
+                endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today");
+                firstTimeFlag = false;
+            } while (endDate < startDate);
 
             return (startDate, endDate);
         }
 
 
 
-        private void ProcessManager_SelectReport(HabitModel habit, string startDate, string endDate)
+        private void ProcessManager_SelectReport(HabitModel habit, DateTime startDate, DateTime endDate)
         {
-            var sortedRecords = new List<RecordModel>();
+            var sortedRecords = GetSortedRecordsList(habit);
 
             PrintTitleBar("");
 
 
-            int count = GetRecordCountForDateRange(habit, startDate, endDate);
-            double sum = GetRecordSumForDateRange(habit, startDate, endDate);
-            double average = GetRecordAverageForDateRange(habit, startDate, endDate);
-            int streak = GetLongestStreakForDateRange(habit, startDate, endDate);
+            int recordCount = GetRecordCountForDateRange(sortedRecords, startDate, endDate);
+            int daysCount = GetDayCountForDateRange(sortedRecords, startDate, endDate);
+            double sum = GetRecordSumForDateRange(sortedRecords, startDate, endDate);
+            double dailyAverage = sum / daysCount;
+            (int streakDuration, double streakQuantity) = GetLongestStreakForDateRange(sortedRecords, startDate, endDate);
 
-            PrintReport(habit, startDate, endDate, count, sum, average, streak);
+            PrintReport(habit, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"), recordCount, daysCount, sum,
+                        dailyAverage, streakDuration, streakQuantity);
         }
 
-
-        private void PrintReport(HabitModel habit, string startDate, string endDate, int count, double sum,  double average, int streak)
+        private void PrintReport(HabitModel habit, string startDate, string endDate, int recordCount, int daysCount, double sum, 
+                                 double dailyAverage, int streakDuration, double streakQuantity)
         {
             Console.WriteLine($"Generating report for {habit.HabitName}");
             Console.WriteLine($"Unit: {habit.UnitName}");
             Console.WriteLine($"Start date: {startDate}");
             Console.WriteLine($"End Date: {endDate}");
             DrawHorizontalLine(65, false, true);
-            Console.WriteLine($"Total count: {count}");
+            Console.WriteLine($"Total record count: {recordCount}");
+            Console.WriteLine($"Number of days with record: {daysCount}");
             Console.WriteLine($"Sum of records: {sum}");
-            Console.WriteLine($"Average: {average}");
-            Console.WriteLine($"Longest Streak: {streak}");
+            Console.WriteLine($"Daily Average: {dailyAverage}");
+            Console.WriteLine($"Longest Streak: {streakQuantity} over {streakDuration}");
         }
 
-        private int GetStartIndex(List<RecordModel> sortedRecords, string startDate)
+        private int GetStartIndex(List<RecordModel> sortedRecords, DateTime startDate)
         {
-            return 1;
+            int startIndex = sortedRecords.FindIndex(a => a.Date == startDate);
+
+            if (startIndex == -1) { startIndex = 0; }
+
+            return startIndex;
         }
-        private int GetEndIndex(string endDate)
+        private int GetEndIndex(List<RecordModel> sortedRecords, DateTime endDate)
         {
-            return 1;
+            int stopIndex = sortedRecords.FindLastIndex(a => a.Date == endDate);
+
+            if (stopIndex == -1) { stopIndex = 0; }
+
+            return stopIndex;
         }
 
-        private int GetRecordCountForDateRange(HabitModel habit, string startDate, string endDate)
+        private int GetRecordCountForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
         {
-            var sortedRecords = GetSortedRecordsList(habit);
-
-            int startIndex = sortedRecords.FindIndex(a => a.Date == DateTime.Parse(startDate));
-            if (startIndex == -1) {startIndex = 0;}
-            int stopIndex = sortedRecords.FindLastIndex(a => a.Date == DateTime.Parse(endDate));
+            var startIndex = GetStartIndex(sortedRecords, startDate);
+            var stopIndex = GetEndIndex(sortedRecords, endDate);
 
             return (stopIndex + 1) - startIndex;
         }
-        private int GetRecordSumForDateRange(HabitModel habit, string startDate, string endDate)
+        private int GetDayCountForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
         {
-            var sortedRecords = GetSortedRecordsList(habit);
+            int uniqueDays = 0;
+            DateTime previousDate = startDate.AddDays(-1);
 
-            return 1;
+            foreach (var record in sortedRecords)                                   // DOUBLE CHECK THIS LOGIC!!!!!!!
+            {
+                if (record.Date >= startDate && record.Date <= endDate)
+                {
+                    if (record.Date.Date != previousDate.Date)
+                    {
+                        uniqueDays++;
+                    }
+                }
+                previousDate = record.Date;
+            }
+
+            return uniqueDays;
         }
-        private int GetRecordAverageForDateRange(HabitModel habit, string startDate, string endDate)
+        private double GetRecordSumForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
         {
-            throw new NotImplementedException();
+            double sum = 0;
+
+            foreach(var record in sortedRecords)
+            {
+                if (record.Date >= startDate && record.Date <= endDate)
+                {
+                    sum += record.Quantity;
+                }
+            }
+
+            return sum;
         }
-        private int GetLongestStreakForDateRange(HabitModel habit, string startDate, string endDate)
+        private double GetDailyAverageForDateRange(double sum, int uniqueDays)
         {
-            throw new NotImplementedException();
+            return sum/uniqueDays;
+        }
+        private (int, double) GetLongestStreakForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
+        {
+            int streakDuration = 1;
+            double streakQuantity = 0;
+
+            DateTime previousDate = startDate.AddDays(-1);
+
+            foreach (var record in sortedRecords)
+            {
+                if (record.Date >= startDate && record.Date <= endDate)
+                {
+                    if (record.Date.Date != previousDate.Date)
+                    {
+                        streakDuration++;
+                    }
+
+                    streakQuantity += record.Quantity;
+                }
+                previousDate = record.Date;
+            }
+
+            return (streakDuration, streakQuantity);
         }
 
 
@@ -454,58 +555,6 @@ namespace HabitTracker
             Console.WriteLine();
             Console.WriteLine("Goodbye!");
             Console.WriteLine();
-        }
-        private void PrintMainMenu()
-        {
-            Menu mainMenu = new Menu
-            (
-                "Main Menu",
-                "Select an option below by entering the menu item number:",
-                new List<string>()
-                {
-                    "Select Habit",
-                    "Add New Habit",
-                    "Delete Habit",
-                    "Exit Application"
-                }
-            );
-
-            mainMenu.PrintMenu();
-        }
-        private void PrintSelectHabitMenu()
-        {
-            Menu viewHabitMenu = new Menu
-            (
-                "View Habit",
-                "Select an option below by entering the menu item number:",
-                new List<string>()
-                {
-                    "Add Record",
-                    "Delete Record",
-                    "Change Record",
-                    "Generate Report",
-                    "Return to Main Menu"
-                }
-            );
-
-            viewHabitMenu.PrintMenu();
-        }
-        private void PrintSelectReportMenu()
-        {
-            Menu viewHabitMenu = new Menu
-            (
-                "Select Report",
-                "Select an option below by entering the menu item number:",
-                new List<string>()
-                {
-                    "Past Year",
-                    "Year to Date",
-                    "Custom Range",
-                    "Return to Main Menu"
-                }
-            );
-
-            viewHabitMenu.PrintMenu();
         }
         private void PrintHabitDeleteWarning(string habitName, int recordCount)
         {
