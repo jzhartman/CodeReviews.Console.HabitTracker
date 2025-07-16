@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HabitTracker", "HabitTracke
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HabitTrackerLibrary", "HabitTrackerLibrary\HabitTrackerLibrary.csproj", "{57C8BE78-A720-4EB4-9813-A7F3810A8662}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest_HabitTrackerReport", "UnitTest_HabitTrackerReport\UnitTest_HabitTrackerReport.csproj", "{88B05356-2F1A-4728-A6CB-3E6F776E8E8A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{57C8BE78-A720-4EB4-9813-A7F3810A8662}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57C8BE78-A720-4EB4-9813-A7F3810A8662}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57C8BE78-A720-4EB4-9813-A7F3810A8662}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88B05356-2F1A-4728-A6CB-3E6F776E8E8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88B05356-2F1A-4728-A6CB-3E6F776E8E8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88B05356-2F1A-4728-A6CB-3E6F776E8E8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88B05356-2F1A-4728-A6CB-3E6F776E8E8A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,22 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitTracker
 {
-    /*  
+    /*  TEST THE CRAP OUT OF THE NEW REPORT METHODS!!!
+     *  
+     *  Refactoreed report to new class
+     *      - Try running thorugh deub with wathc using custom range 2025-07-03 to today
+     *  
+     *  REVIEW STREAK METHOD!!!
+     *      - Seems mostly Ok right now
+     *      - Further check that it is working properly
+     *      - Handle multiple records in a day (should add to qty but not duration)
+     *  
+     *  
+     *  Menu Selection Bug in report date range select - entering wrong value    
+     *  
+     *  
+     *  
+     *  
      *  VALIDATE CUSTOM DATE RANGES!!!!!
      *      - EndDate > StartDate
      *      - EndDate <= Today
@@ -233,115 +248,25 @@ namespace HabitTracker
 
             PrintTitleBar("");
 
+            var report = new ReportModel(sortedRecords, startDate, endDate);
 
-            int recordCount = GetRecordCountForDateRange(sortedRecords, startDate, endDate);
-            int daysCount = GetDayCountForDateRange(sortedRecords, startDate, endDate);
-            double sum = GetRecordSumForDateRange(sortedRecords, startDate, endDate);
-            double dailyAverage = sum / daysCount;
-            (int streakDuration, double streakQuantity) = GetLongestStreakForDateRange(sortedRecords, startDate, endDate);
-
-            PrintReport(habit, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"), recordCount, daysCount, sum,
-                        dailyAverage, streakDuration, streakQuantity);
+            PrintReport(habit, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"), report);
         }
 
-        private void PrintReport(HabitModel habit, string startDate, string endDate, int recordCount, int daysCount, double sum, 
-                                 double dailyAverage, int streakDuration, double streakQuantity)
+        private void PrintReport(HabitModel habit, string startDate, string endDate, ReportModel report)
         {
             Console.WriteLine($"Generating report for {habit.HabitName}");
             Console.WriteLine($"Unit: {habit.UnitName}");
             Console.WriteLine($"Start date: {startDate}");
             Console.WriteLine($"End Date: {endDate}");
             DrawHorizontalLine(65, false, true);
-            Console.WriteLine($"Total record count: {recordCount}");
-            Console.WriteLine($"Number of days with record: {daysCount}");
-            Console.WriteLine($"Sum of records: {sum}");
-            Console.WriteLine($"Daily Average: {dailyAverage}");
-            Console.WriteLine($"Longest Streak: {streakQuantity} over {streakDuration}");
-        }
+            Console.WriteLine($"Total record count: {report.RecordCount}");
+            Console.WriteLine($"Number of days with record: {report.DayCount}");
+            Console.WriteLine($"Sum of records: {report.Sum}");
+            Console.WriteLine($"Daily Average: {report.DailyAverage}");
+            Console.WriteLine($"Longest Streak: {report.StreakQuantity} {habit.UnitName} over {report.StreakDuration} days starting on {report.StreakStartDate.ToString("yyyy-MM-dd")}");
 
-        private int GetStartIndex(List<RecordModel> sortedRecords, DateTime startDate)
-        {
-            int startIndex = sortedRecords.FindIndex(a => a.Date == startDate);
-
-            if (startIndex == -1) { startIndex = 0; }
-
-            return startIndex;
-        }
-        private int GetEndIndex(List<RecordModel> sortedRecords, DateTime endDate)
-        {
-            int stopIndex = sortedRecords.FindLastIndex(a => a.Date == endDate);
-
-            if (stopIndex == -1) { stopIndex = 0; }
-
-            return stopIndex;
-        }
-
-        private int GetRecordCountForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
-        {
-            var startIndex = GetStartIndex(sortedRecords, startDate);
-            var stopIndex = GetEndIndex(sortedRecords, endDate);
-
-            return (stopIndex + 1) - startIndex;
-        }
-        private int GetDayCountForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
-        {
-            int uniqueDays = 0;
-            DateTime previousDate = startDate.AddDays(-1);
-
-            foreach (var record in sortedRecords)                                   // DOUBLE CHECK THIS LOGIC!!!!!!!
-            {
-                if (record.Date >= startDate && record.Date <= endDate)
-                {
-                    if (record.Date.Date != previousDate.Date)
-                    {
-                        uniqueDays++;
-                    }
-                }
-                previousDate = record.Date;
-            }
-
-            return uniqueDays;
-        }
-        private double GetRecordSumForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
-        {
-            double sum = 0;
-
-            foreach(var record in sortedRecords)
-            {
-                if (record.Date >= startDate && record.Date <= endDate)
-                {
-                    sum += record.Quantity;
-                }
-            }
-
-            return sum;
-        }
-        private double GetDailyAverageForDateRange(double sum, int uniqueDays)
-        {
-            return sum/uniqueDays;
-        }
-        private (int, double) GetLongestStreakForDateRange(List<RecordModel> sortedRecords, DateTime startDate, DateTime endDate)
-        {
-            int streakDuration = 1;
-            double streakQuantity = 0;
-
-            DateTime previousDate = startDate.AddDays(-1);
-
-            foreach (var record in sortedRecords)
-            {
-                if (record.Date >= startDate && record.Date <= endDate)
-                {
-                    if (record.Date.Date != previousDate.Date)
-                    {
-                        streakDuration++;
-                    }
-
-                    streakQuantity += record.Quantity;
-                }
-                previousDate = record.Date;
-            }
-
-            return (streakDuration, streakQuantity);
+            UserInput.PressAnyKeyToContinue();
         }
 
 
