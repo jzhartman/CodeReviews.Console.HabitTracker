@@ -25,7 +25,7 @@ namespace HabitTracker
 
             do
             {
-                message = (firstTime) ? message : "ERROR: Please enter a valid number! ";
+                //message = (firstTime) ? message : "ERROR: Please enter a valid number! ";
                 numberInput = GetUserInput(message);
                 firstTime = false;
 
@@ -37,6 +37,11 @@ namespace HabitTracker
                 {
                     output = Int32.MinValue;
                     validNumber = true;
+                }
+
+                if (validNumber == false )
+                {
+                    Console.WriteLine("ERROR: Please enter a valid number!");
                 }
 
             } while (validNumber == false);
@@ -68,6 +73,7 @@ namespace HabitTracker
                     else
                     {
                         output = DateTime.MinValue;
+                        validDate = false;
                     }
                 }
                 else

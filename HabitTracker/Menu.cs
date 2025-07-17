@@ -8,30 +8,26 @@ namespace HabitTracker
 {
     internal class Menu
     {
-        public string Title { get; set; }
-        public string Message { get; set; }
-        public List<string> Options { get; set; }
+        public string Title { get; private set; }
+        public string Message { get; private set; }
+        public List<string> Options { get; private set; }
 
         public Menu(string title, string message, List<string> options) 
         {
-            this.Title = title;
-            this.Message = message;
-            this.Options = options;
+            Title = title;
+            Message = message;
+            Options = options;
         }
 
         public void PrintMenu()
         {
-            //Console.WriteLine("---------------------------------------------------------");
             Console.WriteLine(Message);
             Console.WriteLine();
 
             PrintOptions();
             Console.WriteLine();
             Console.WriteLine();
-
-            //Console.WriteLine("---------------------------------------------------------");
         }
-
         private void PrintOptions()
         {
             int i = 1;

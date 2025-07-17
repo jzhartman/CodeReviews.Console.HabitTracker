@@ -7,36 +7,13 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitTracker
 {
-    /*  TEST THE CRAP OUT OF THE NEW REPORT METHODS!!!
+    /*  TEST, TEST, TEST, TEST, TEST!!!!
      *  
-     *  Refactoreed report to new class
-     *      - Try running thorugh deub with wathc using custom range 2025-07-03 to today
+     *  Reports: UNIT TEST!!!
      *  
-     *  REVIEW STREAK METHOD!!!
-     *      - Seems mostly Ok right now
-     *      - Further check that it is working properly
-     *      - Handle multiple records in a day (should add to qty but not duration)
-     *  
-     *  
-     *  Menu Selection Bug in report date range select - entering wrong value    
-     *  
-     *  
-     *  
-     *  
-     *  VALIDATE CUSTOM DATE RANGES!!!!!
-     *      - EndDate > StartDate
-     *      - EndDate <= Today
      *      
-     *  Date Ranges should not rely on matching strings.... Should convert to dateTime, then get bool value for > or <
-     *  
-     *  Date have been changed to DateTime and cannot be greater than today
-     *  Need to review all logic surrounding report date generation
-     *      
-     *  
      *  ReadMe file
      *  Parameterized queries
-     *      
-     *  
      */
 
     public class ConsoleUI
@@ -72,6 +49,7 @@ namespace HabitTracker
             {
                 "Past Year",
                 "Year to Date",
+                "All Records",
                 "Custom Range",
                 "Return to Main Menu"
             }
@@ -159,7 +137,6 @@ namespace HabitTracker
                 } while (validInput == false); 
             }
         }
-
         private void MenuHandler_SelectReport(HabitModel habit)
         {
             bool returnToPreviousMenu = false;
@@ -186,9 +163,13 @@ namespace HabitTracker
                             (startDate, endDate) = GetDatesForYearToDate();
                             break;
                         case 3:
-                            (startDate, endDate) = GetDateForCustomRange();
+                            startDate = DateTime.MinValue.AddDays(1);
+                            endDate = DateTime.MaxValue;
                             break;
                         case 4:
+                            (startDate, endDate) = GetDateForCustomRange();
+                            break;
+                        case 5:
                             returnToPreviousMenu = true;
                             break;
                         default:
@@ -205,40 +186,6 @@ namespace HabitTracker
                 }
             }
         }
-        private (DateTime, DateTime) GetDatesForPastYear()
-        {
-            var startDate = DateTime.Now.AddYears(-1);
-            var endDate = DateTime.Now;
-
-            return (startDate, endDate);
-        }
-        private (DateTime, DateTime) GetDatesForYearToDate()
-        {
-            var startDate = DateTime.Parse(DateTime.Now.Year.ToString() + "-01-01");
-            var endDate = DateTime.Now;
-
-            return (startDate, endDate);
-        }
-        private (DateTime, DateTime) GetDateForCustomRange()
-        {
-            var startDate = UserInput.GetDateInput("Enter start date: ");
-            var endDate = new DateTime();
-            bool firstTimeFlag = true;
-
-            do
-            {
-                if (firstTimeFlag == false)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("ERROR: End date must be on or after the startDate!");
-                    Console.WriteLine();
-                }
-                endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today");
-                firstTimeFlag = false;
-            } while (endDate < startDate);
-
-            return (startDate, endDate);
-        }
 
 
 
@@ -252,33 +199,6 @@ namespace HabitTracker
 
             PrintReport(habit, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"), report);
         }
-
-        private void PrintReport(HabitModel habit, string startDate, string endDate, ReportModel report)
-        {
-            Console.WriteLine($"Generating report for {habit.HabitName}");
-            Console.WriteLine($"Unit: {habit.UnitName}");
-            Console.WriteLine($"Start date: {startDate}");
-            Console.WriteLine($"End Date: {endDate}");
-            DrawHorizontalLine(65, false, true);
-            Console.WriteLine($"Total record count: {report.RecordCount}");
-            Console.WriteLine($"Number of days with record: {report.DayCount}");
-            Console.WriteLine($"Sum of records: {report.Sum}");
-            Console.WriteLine($"Daily Average: {report.DailyAverage}");
-            Console.WriteLine($"Longest Streak: {report.StreakQuantity} {habit.UnitName} over {report.StreakDuration} days starting on {report.StreakStartDate.ToString("yyyy-MM-dd")}");
-
-            UserInput.PressAnyKeyToContinue();
-        }
-
-
-
-
-
-
-
-
-
-
-
         private void ProcessManager_SelectHabit()
         {
             PrintTitleBar("");
@@ -528,6 +448,21 @@ namespace HabitTracker
             Console.WriteLine($"Enter data for new record of {habitName}");
             Console.WriteLine();
         }
+        private void PrintReport(HabitModel habit, string startDate, string endDate, ReportModel report)
+        {
+            Console.WriteLine($"Generating report for {habit.HabitName}");
+            Console.WriteLine($"Unit: {habit.UnitName}");
+            Console.WriteLine($"Start date: {startDate}");
+            Console.WriteLine($"End Date: {endDate}");
+            DrawHorizontalLine(65, false, true);
+            Console.WriteLine($"Total record count: {report.RecordCount}");
+            Console.WriteLine($"Number of days with record: {report.DayCount}");
+            Console.WriteLine($"Sum of records: {report.Sum}");
+            Console.WriteLine($"Daily Average: {report.DailyAverage}");
+            Console.WriteLine($"Longest Streak: {report.StreakQuantity} {habit.UnitName} over {report.StreakDuration} days starting on {report.StreakStartDate.ToString("yyyy-MM-dd")}");
+
+            UserInput.PressAnyKeyToContinue();
+        }
 
 
 
@@ -551,6 +486,9 @@ namespace HabitTracker
             
             return sortedRecords[userSelection - 1];
         }
+
+
+
         private (bool dateChanged, DateTime newDate) GetUpdatedDateFromUser(DateTime originalDate)
         {
             var dateChanged = true;
@@ -660,6 +598,40 @@ namespace HabitTracker
             }
 
             return name;
+        }
+        private (DateTime, DateTime) GetDatesForPastYear()
+        {
+            var startDate = DateTime.Now.AddYears(-1);
+            var endDate = DateTime.Now;
+
+            return (startDate, endDate);
+        }
+        private (DateTime, DateTime) GetDatesForYearToDate()
+        {
+            var startDate = DateTime.Parse(DateTime.Now.Year.ToString() + "-01-01");
+            var endDate = DateTime.Now;
+
+            return (startDate, endDate);
+        }
+        private (DateTime, DateTime) GetDateForCustomRange()
+        {
+            var startDate = UserInput.GetDateInput("Enter start date: ");
+            var endDate = new DateTime();
+            bool firstTimeFlag = true;
+
+            do
+            {
+                if (firstTimeFlag == false)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("ERROR: End date must be on or after the startDate!");
+                    Console.WriteLine();
+                }
+                endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today");
+                firstTimeFlag = false;
+            } while (endDate < startDate);
+
+            return (startDate, endDate);
         }
     }
 }
