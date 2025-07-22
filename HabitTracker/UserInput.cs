@@ -83,7 +83,7 @@ namespace HabitTracker
                     if (validDate == false)
                     {
                         Console.WriteLine();
-                        Console.WriteLine($"ERROR: Date invalid date entered! Please follow the format: \"{dateFormat}\"");
+                        Console.WriteLine($"ERROR: Invalid date entered! Try following the format: \"{dateFormat.ToUpper()}\"");
                         Console.WriteLine();
                     }
 

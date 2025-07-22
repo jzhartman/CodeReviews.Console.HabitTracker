@@ -383,7 +383,7 @@ namespace HabitTracker
             Console.WriteLine($"\t No.    Date          {habit.UnitName}");
             foreach (var record in sortedRecords.Select((value, i) => (value, i)))
             {
-                Console.WriteLine($"\t{record.i + 1,4}:   {record.value.Date.ToString("yyyy-MM-dd"),10}    {record.value.Quantity,5}");
+                Console.WriteLine($"\t{record.i + 1,4}:   {record.value.Date.ToString("yyyy-MM-dd"),10}    {record.value.Quantity,5:0.##}");
             }
 
             DrawHorizontalLine(40, true, true);
@@ -417,11 +417,11 @@ namespace HabitTracker
             }
             else if (!dateChanged && quantityChanged)
             {
-                output = $"Preparing to change quantity from {originalQuantity} {unit} to {newQuantity} {unit}.";
+                output = $"Preparing to change quantity from {originalQuantity:0.#########} {unit} to {newQuantity:0.#########} {unit}.";
             }
             else if (dateChanged && quantityChanged)
             {
-                output = $"Preparing to change date from {originalDate} to {newDate} and changed quantity from {originalQuantity} to {newQuantity}.";
+                output = $"Preparing to change date from {originalDate} to {newDate} and changed quantity from {originalQuantity:0.#########} to {newQuantity:0.#########}.";
             }
             else
             {
@@ -433,7 +433,7 @@ namespace HabitTracker
         private void PrintRecordData(string action, double quantity, string unitName, string habitName, string date)
         {
             Console.WriteLine();
-            Console.WriteLine($"{action} record for {quantity} {unitName} of {habitName} on {date}");
+            Console.WriteLine($"{action} record for {quantity:0.#########} {unitName} of {habitName} on {date}");
 
         }
         private void PrintHabitData(string habitName, string unitName)
@@ -457,8 +457,8 @@ namespace HabitTracker
             DrawHorizontalLine(65, false, true);
             Console.WriteLine($"Total record count: {report.RecordCount}");
             Console.WriteLine($"Number of days with record: {report.DayCount}");
-            Console.WriteLine($"Sum of records: {report.Sum}");
-            Console.WriteLine($"Daily Average: {report.DailyAverage}");
+            Console.WriteLine($"Sum of records: {report.Sum:0.###}");
+            Console.WriteLine($"Daily Average: {report.DailyAverage:0.###}");
             Console.WriteLine($"Longest Streak: {report.StreakQuantity} {habit.UnitName} over {report.StreakDuration} days starting on {report.StreakStartDate.ToString("yyyy-MM-dd")}");
 
             UserInput.PressAnyKeyToContinue();
@@ -517,7 +517,7 @@ namespace HabitTracker
         }
         private (DateTime date, double quantity) GetRecordData(HabitModel habit)
         {
-            var date = UserInput.GetDateInput($"Enter the date when {habit.HabitName} occurred using YYYY-MM-DD format (leave blank to add today's date): ", "today");
+            var date = UserInput.GetDateInput($"Enter the date when {habit.HabitName} occurred (leave blank to add today's date): ", "today");
             var quantity = UserInput.GetNumberInput($"Enter the quantity to record (Unit = {habit.UnitName}): ", 1, Int32.MaxValue);
 
             return (date, quantity);
@@ -627,7 +627,7 @@ namespace HabitTracker
                     Console.WriteLine("ERROR: End date must be on or after the startDate!");
                     Console.WriteLine();
                 }
-                endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date: ", "today");
+                endDate = UserInput.GetDateInput("Enter end date (leave blank for todays date): ", "today");
                 firstTimeFlag = false;
             } while (endDate < startDate);
 
