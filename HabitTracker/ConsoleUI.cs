@@ -1,21 +1,8 @@
 ﻿using HabitTrackerLibrary.DataAccess;
 using HabitTrackerLibrary.Models;
-using System;
-using System.Diagnostics;
-using System.Threading.Channels;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitTracker
 {
-    /*  TEST, TEST, TEST, TEST, TEST!!!!
-     *  
-     *  Reports: UNIT TEST!!!
-     *  
-     *      
-     *  ReadMe file
-     *  Parameterized queries
-     */
-
     public class ConsoleUI
     {
         private readonly SqlData sqlData;
@@ -67,7 +54,7 @@ namespace HabitTracker
 
             while (closeApp == false)
             {
-                PrintTitleBar("Main Menu");
+                PrintTitleBar();
                 PrintHabitsList();
                 mainMenu.PrintMenu();
 
@@ -103,7 +90,7 @@ namespace HabitTracker
             while (returnToMainMenu == false)
             {
                 var sortedRecords = GetSortedRecordsList(habit);
-                PrintTitleBar($"View Records For Habit: {habit.HabitName}");
+                PrintTitleBar();
                 PrintRecordsList(sortedRecords, habit);
                 habitMenu.PrintMenu();
 
@@ -147,7 +134,7 @@ namespace HabitTracker
                 var startDate = new DateTime();
                 var endDate = new DateTime();
 
-                PrintTitleBar($"Select Report for: {habit.HabitName}");
+                PrintTitleBar();
                 reportMenu.PrintMenu();
 
                 do
@@ -193,7 +180,7 @@ namespace HabitTracker
         {
             var sortedRecords = GetSortedRecordsList(habit);
 
-            PrintTitleBar("");
+            PrintTitleBar();
 
             var report = new ReportModel(sortedRecords, startDate, endDate);
 
@@ -201,20 +188,19 @@ namespace HabitTracker
         }
         private void ProcessManager_SelectHabit()
         {
-            PrintTitleBar("");
+            PrintTitleBar();
             PrintHabitsList();
             var habit = GetHabitFromList("view");
 
-            //PrintRecordsListForHabit(habit);
             MenuHandler_SelectHabit(habit);
         }
         private void ProcessManager_CreateHabit()
         {
-            PrintTitleBar("");
+            PrintTitleBar();
             PrintHabitsList();
             var habitName = GetNewHabitName();
 
-            PrintTitleBar("");
+            PrintTitleBar();
             PrintUnitsList();
             var unitName = GetUnitNameFromList();
 
@@ -223,7 +209,7 @@ namespace HabitTracker
         }
         private void ProcessManager_DeleteHabit()
         {
-            PrintTitleBar("");
+            PrintTitleBar();
             PrintHabitsList();
             var habit = GetHabitFromList("delete");
 
@@ -234,7 +220,7 @@ namespace HabitTracker
         }
         private void ProcessManager_AddRecord(List<RecordModel> sortedRecords, HabitModel habit)
         {
-            PrintTitleBar("");
+            PrintTitleBar();
             PrintRecordsList( sortedRecords, habit);
             PrintAddRecordInstruction(habit.HabitName);
             (DateTime date, double quantity) = GetRecordData(habit);
@@ -388,12 +374,11 @@ namespace HabitTracker
 
             DrawHorizontalLine(40, true, true);
         }
-        private void PrintTitleBar(string message)
+        private void PrintTitleBar()
         {
             RefreshConsoleWindow();
             Console.WriteLine("Habit Tracker Application: Version 1.0");
             DrawHorizontalLine(Console.WindowWidth, false, true);
-            //Console.WriteLine(message);
         }
         private void PrintGoodbyeMessage()
         {

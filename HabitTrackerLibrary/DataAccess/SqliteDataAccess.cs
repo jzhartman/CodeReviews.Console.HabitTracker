@@ -1,7 +1,4 @@
 ﻿using Microsoft.Data.Sqlite;
-using System.Globalization;
-using HabitTrackerLibrary.Models;
-using HabitTrackerLibrary.DataAccess;
 
 namespace HabitTrackerLibrary
 {
