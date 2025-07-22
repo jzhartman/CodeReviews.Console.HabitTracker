@@ -76,15 +76,14 @@ namespace HabitTrackerLibrary.Models
                     {
                         DayCount++;
                     }
-                    else
-                    {
-                        StreakQuantity += record.Quantity;
-                    }
-
 
                     if (record.Date.Date == previousDate.Date.AddDays(1))
                     {
                         StreakDuration++;
+                        StreakQuantity += record.Quantity;
+                    }
+                    else if (record.Date.Date == previousDate.Date)
+                    {
                         StreakQuantity += record.Quantity;
                     }
                     else
@@ -93,7 +92,7 @@ namespace HabitTrackerLibrary.Models
                         {
                             previousStreakDuration = StreakDuration;
                             previousStreakQuantity = StreakQuantity;
-                            previousStreakStartDate = StreakStartDate; 
+                            previousStreakStartDate = StreakStartDate;
                         }
 
                         StreakDuration = 1;
