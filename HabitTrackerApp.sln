@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HabitTracker", "HabitTracker\HabitTracker.csproj", "{FD9B3AC5-44A3-4AD7-9245-0CD3B477BBF1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "habitTracker.jzhartman", "HabitTracker\habitTracker.jzhartman.csproj", "{FD9B3AC5-44A3-4AD7-9245-0CD3B477BBF1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HabitTrackerLibrary", "HabitTrackerLibrary\HabitTrackerLibrary.csproj", "{57C8BE78-A720-4EB4-9813-A7F3810A8662}"
 EndProject
